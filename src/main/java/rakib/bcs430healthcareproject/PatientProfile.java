@@ -35,6 +35,8 @@ public class PatientProfile {
     private String bloodType;
     private String vaccinationStatus;
     private String medicalHistory;
+    private String height;  // e.g., "5'10\"" or "178 cm"
+    private Double weight;  // in lbs or kg
     
     private Long createdAt;
     private Long updatedAt;
@@ -206,6 +208,22 @@ public class PatientProfile {
         this.vaccinationStatus = vaccinationStatus;
     }
 
+    public String getHeight() {
+        return height;
+    }
+
+    public void setHeight(String height) {
+        this.height = height;
+    }
+
+    public Double getWeight() {
+        return weight;
+    }
+
+    public void setWeight(Double weight) {
+        this.weight = weight;
+    }
+
     public Long getCreatedAt() {
         return createdAt;
     }
@@ -246,6 +264,8 @@ public class PatientProfile {
         result.put("bloodType", bloodType);
         result.put("vaccinationStatus", vaccinationStatus);
         result.put("medicalHistory", medicalHistory);
+        result.put("height", height);
+        result.put("weight", weight);
         result.put("createdAt", createdAt);
         result.put("updatedAt", updatedAt);
         return result;

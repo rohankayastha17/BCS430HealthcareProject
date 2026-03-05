@@ -2,11 +2,13 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
@@ -65,6 +67,17 @@
                             <ComboBox fx:id="timeSlotComboBox" style="-fx-padding: 8;"/>
                         </VBox>
                     </HBox>
+                </VBox>
+
+                <!-- Patient Info Section -->
+                <VBox style="-fx-border-color: #E8E8E8; -fx-border-radius: 5; -fx-padding: 20; -fx-spacing: 10; -fx-background-color: white;">
+                    <HBox spacing="10" alignment="CENTER_LEFT">
+                        <CheckBox fx:id="newPatientCheck" text="New Patient" />
+                    </HBox>
+                    <VBox spacing="5">
+                        <Label text="Reason for Visit" style="-fx-text-fill: #2C3E50; -fx-font-size: 14; -fx-font-weight: bold;"/>
+                        <TextField fx:id="reasonField" promptText="e.g. Annual checkup, sore throat" style="-fx-padding: 8;" />
+                    </VBox>
                 </VBox>
 
                 <!-- Notes Section -->

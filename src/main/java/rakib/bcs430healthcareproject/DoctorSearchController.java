@@ -238,6 +238,7 @@ public class DoctorSearchController {
                     full.setBio(profile.getBio());
                     full.setInsuranceInfo(profile.getInsuranceInfo());
                     full.setHours(profile.getHours());
+                    full.setAvailability(profile.getAvailability() != null ? profile.getAvailability() : new java.util.HashMap<>());
                     full.setVisitType(profile.getVisitType());
                     full.setNotes(profile.getNotes());
 

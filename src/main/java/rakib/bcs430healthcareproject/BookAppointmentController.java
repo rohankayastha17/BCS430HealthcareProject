@@ -5,6 +5,9 @@ import javafx.scene.control.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.DayOfWeek;
+import java.time.format.TextStyle;
+import java.util.Locale;
 
 /**
  * Controller for booking appointments with doctors.
@@ -16,6 +19,8 @@ public class BookAppointmentController {
     @FXML private Label clinicLabel;
     @FXML private DatePicker appointmentDatePicker;
     @FXML private ComboBox<String> timeSlotComboBox;
+    @FXML private CheckBox newPatientCheck;
+    @FXML private TextField reasonField;
     @FXML private TextArea notesArea;
     @FXML private Button bookButton;
     @FXML private Button cancelButton;
@@ -53,7 +58,7 @@ public class BookAppointmentController {
             }
         });
 
-        // Setup time slots
+        // Setup time slots (will be filtered later based on availability)
         timeSlotComboBox.getItems().addAll(
                 "09:00 AM",
                 "09:30 AM",
@@ -68,6 +73,9 @@ public class BookAppointmentController {
                 "04:00 PM",
                 "04:30 PM"
         );
+
+        // listener to update slots when date changed
+        appointmentDatePicker.valueProperty().addListener((obs, oldVal, newVal) -> updateAvailableSlots(newVal));
 
         // Setup buttons
         bookButton.setStyle("-fx-padding: 12 25; -fx-font-size: 14; -fx-background-color: #27AE60; -fx-text-fill: white;");
@@ -88,6 +96,8 @@ public class BookAppointmentController {
         // Validate inputs
         LocalDate selectedDate = appointmentDatePicker.getValue();
         String selectedTime = timeSlotComboBox.getValue();
+        boolean isNew = newPatientCheck.isSelected();
+        String reason = reasonField.getText() != null ? reasonField.getText().trim() : "";
         String notes = notesArea.getText() != null ? notesArea.getText().trim() : "";
 
         if (selectedDate == null) {
@@ -119,6 +129,8 @@ public class BookAppointmentController {
                 timestamp
         );
         appointment.setAppointmentTime(selectedDate + " " + selectedTime);
+        appointment.setNewPatient(isNew);
+        appointment.setReason(reason);
         appointment.setNotes(notes);
 
         // Save to Firebase
@@ -170,6 +182,39 @@ public class BookAppointmentController {
         }
 
         return LocalTime.of(hour, minute);
+    }
+
+    /**
+     * Filter the time slots based on the doctor's availability map.
+     */
+    private void updateAvailableSlots(java.time.LocalDate date) {
+        if (date == null || selectedDoctor == null) return;
+        String dow = date.getDayOfWeek().toString().substring(0,1).toUpperCase()
+                + date.getDayOfWeek().toString().substring(1).toLowerCase();
+        timeSlotComboBox.getItems().clear();
+        java.util.List<String> slots = java.util.List.of(
+                "09:00 AM","09:30 AM","10:00 AM","10:30 AM","11:00 AM","11:30 AM",
+                "02:00 PM","02:30 PM","03:00 PM","03:30 PM","04:00 PM","04:30 PM"
+        );
+        java.util.Map<String,String> avail = selectedDoctor.getAvailability();
+        if (avail != null && avail.containsKey(dow) && !avail.get(dow).isEmpty()) {
+            // simple parsing: assume "start - end" in same format as slots
+            String range = avail.get(dow);
+            String[] parts = range.split("-\\s*");
+            if (parts.length == 2) {
+                java.time.LocalTime start = parseTime(parts[0].trim());
+                java.time.LocalTime end = parseTime(parts[1].trim());
+                for (String slot : slots) {
+                    LocalTime t = parseTime(slot);
+                    if (!t.isBefore(start) && !t.isAfter(end)) {
+                        timeSlotComboBox.getItems().add(slot);
+                    }
+                }
+                return;
+            }
+        }
+        // fallback to all slots if availability not set or parse failed
+        timeSlotComboBox.getItems().addAll(slots);
     }
 
     private void showStatus(String message, boolean isError) {

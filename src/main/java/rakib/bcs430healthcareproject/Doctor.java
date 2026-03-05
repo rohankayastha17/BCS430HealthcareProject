@@ -21,11 +21,13 @@ public class Doctor {
     private String licenseNumber;
     private String bio;
     private String insuranceInfo;
-    private String hours;
+    private String hours;    // legacy string representation of office hours
+    private java.util.Map<String,String> availability; // map day->time range (e.g. "Monday"->"9:00 AM-5:00 PM")
     private String visitType;
     private String notes;
 
     public Doctor() {
+        this.availability = new java.util.HashMap<>();
     }
 
     public Doctor(String uid, String name, String specialty, String zip, 
@@ -168,6 +170,14 @@ public class Doctor {
 
     public void setHours(String hours) {
         this.hours = hours;
+    }
+
+    public java.util.Map<String, String> getAvailability() {
+        return availability;
+    }
+
+    public void setAvailability(java.util.Map<String, String> availability) {
+        this.availability = availability;
     }
 
     public String getVisitType() {

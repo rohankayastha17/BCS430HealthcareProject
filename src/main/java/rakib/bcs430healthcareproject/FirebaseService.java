@@ -351,6 +351,27 @@ public class FirebaseService {
     }
 
     /**
+     * Updates a doctor's profile in Firestore.
+     *
+     * @param uid Doctor's UID
+     * @param profile Updated doctor profile
+     * @return CompletableFuture that completes when the update is done
+     */
+    public CompletableFuture<Void> updateDoctorProfile(String uid, DoctorProfile profile) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                profile.setUpdatedAt(System.currentTimeMillis());
+                ApiFuture<?> future = firestore.collection(DOCTORS_COLLECTION).document(uid).set(profile);
+                future.get();
+                System.out.println("Doctor profile updated for UID: " + uid);
+                return null;
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException("Failed to update doctor profile: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
      * Handles Firebase Authentication exceptions and returns user-friendly error messages.
      *
      * @param e FirebaseAuthException thrown by Firebase

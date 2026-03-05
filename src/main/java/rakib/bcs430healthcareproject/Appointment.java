@@ -12,6 +12,8 @@ public class Appointment {
     private Long appointmentDateTime; // Unix timestamp
     private String appointmentTime; // e.g., "2024-03-15 10:30 AM"
     private String status; // SCHEDULED, COMPLETED, CANCELLED
+    private Boolean newPatient;
+    private String reason;
     private String notes;
     private Long createdAt;
 
@@ -92,6 +94,22 @@ public class Appointment {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Boolean getNewPatient() {
+        return newPatient;
+    }
+
+    public void setNewPatient(Boolean newPatient) {
+        this.newPatient = newPatient;
+    }
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
     }
 
     public String getNotes() {

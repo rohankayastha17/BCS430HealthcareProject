@@ -35,7 +35,8 @@ public class DoctorProfile {
     private String licenseNumber;
     private String bio;
     private String insuranceInfo;
-    private String hours;
+    private String hours;             // legacy field
+    private java.util.Map<String,String> availability; // day->time range
     private String visitType;
     private String notes;
 
@@ -49,6 +50,7 @@ public class DoctorProfile {
 
     // ===== Required no-arg constructor for Firestore =====
     public DoctorProfile() {
+        this.availability = new java.util.HashMap<>();
     }
 
     // ===== Constructor used at signup =====
@@ -77,6 +79,7 @@ public class DoctorProfile {
         this.role = "DOCTOR";
         this.createdAt = System.currentTimeMillis();
         this.updatedAt = System.currentTimeMillis();
+        this.availability = new java.util.HashMap<>();
     }
 
     // ===== Getters & Setters =====
@@ -223,6 +226,15 @@ public class DoctorProfile {
         touch();
     }
 
+    public java.util.Map<String, String> getAvailability() {
+        return availability;
+    }
+
+    public void setAvailability(java.util.Map<String, String> availability) {
+        this.availability = availability;
+        touch();
+    }
+
     public String getVisitType() {
         return visitType;
     }
@@ -300,6 +312,7 @@ public class DoctorProfile {
         result.put("bio", bio);
         result.put("insuranceInfo", insuranceInfo);
         result.put("hours", hours);
+        result.put("availability", availability);
         result.put("visitType", visitType);
         result.put("notes", notes);
 

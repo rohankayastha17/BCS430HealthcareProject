@@ -134,6 +134,20 @@ public class PatientAppointmentsController {
         dateTimeLabel.setStyle("-fx-font-size: 12; -fx-text-fill: #34495E;");
         card.getChildren().add(dateTimeLabel);
 
+        // New patient indicator
+        if (Boolean.TRUE.equals(apt.getNewPatient())) {
+            Label newLabel = new Label("New patient");
+            newLabel.setStyle("-fx-font-size: 11; -fx-text-fill: #E67E22; -fx-font-weight: bold;");
+            card.getChildren().add(newLabel);
+        }
+
+        // Reason for visit
+        if (apt.getReason() != null && !apt.getReason().trim().isEmpty()) {
+            Label reasonLabel = new Label("Reason: " + apt.getReason());
+            reasonLabel.setStyle("-fx-font-size: 11; -fx-text-fill: #7F8C8D; -fx-wrap-text: true;");
+            card.getChildren().add(reasonLabel);
+        }
+
         // Notes if available
         if (apt.getNotes() != null && !apt.getNotes().trim().isEmpty()) {
             Label notesLabel = new Label("Notes: " + apt.getNotes());

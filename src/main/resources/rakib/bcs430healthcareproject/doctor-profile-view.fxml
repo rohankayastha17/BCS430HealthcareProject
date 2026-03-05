@@ -9,6 +9,8 @@
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
@@ -123,8 +125,36 @@
 
                     <VBox spacing="5">
                         <Label text="Office Hours" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                        <TextArea fx:id="hoursArea" promptText="Mon-Fri 9am-5pm, Sat 9am-1pm..."
-                                  wrapText="true" style="-fx-min-height: 70;"/>
+                        <GridPane hgap="10" vgap="5" style="-fx-padding: 0;">
+                            <columnConstraints>
+                                <ColumnConstraints percentWidth="20.0" />
+                                <ColumnConstraints percentWidth="80.0" />
+                            </columnConstraints>
+
+                            <Label text="Monday" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+                            <ComboBox fx:id="mondayField" style="-fx-padding: 8;" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+
+                            <Label text="Tuesday" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+                            <ComboBox fx:id="tuesdayField" style="-fx-padding: 8;" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+
+                            <Label text="Wednesday" GridPane.rowIndex="2" GridPane.columnIndex="0" />
+                            <ComboBox fx:id="wednesdayField" style="-fx-padding: 8;" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+
+                            <Label text="Thursday" GridPane.rowIndex="3" GridPane.columnIndex="0" />
+                            <ComboBox fx:id="thursdayField" style="-fx-padding: 8;" GridPane.rowIndex="3" GridPane.columnIndex="1" />
+
+                            <Label text="Friday" GridPane.rowIndex="4" GridPane.columnIndex="0" />
+                            <ComboBox fx:id="fridayField" style="-fx-padding: 8;" GridPane.rowIndex="4" GridPane.columnIndex="1" />
+
+                            <Label text="Saturday" GridPane.rowIndex="5" GridPane.columnIndex="0" />
+                            <ComboBox fx:id="saturdayField" style="-fx-padding: 8;" GridPane.rowIndex="5" GridPane.columnIndex="1" />
+
+                            <Label text="Sunday" GridPane.rowIndex="6" GridPane.columnIndex="0" />
+                            <ComboBox fx:id="sundayField" style="-fx-padding: 8;" GridPane.rowIndex="6" GridPane.columnIndex="1" />
+                        </GridPane>
+                        <!-- legacy area kept hidden unless needed -->
+                        <TextArea fx:id="hoursArea" promptText="Mon-Fri 9am-5pm\nSat 9am-1pm..."
+                                  wrapText="true" style="-fx-min-height: 70;" visible="false" managed="false"/>
                     </VBox>
                 </VBox>
 

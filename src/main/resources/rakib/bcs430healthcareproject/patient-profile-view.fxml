@@ -105,6 +105,18 @@
                         </VBox>
                     </HBox>
                     
+                    <!-- Height and Weight Row -->
+                    <HBox spacing="20">
+                        <VBox spacing="5" HBox.hgrow="ALWAYS">
+                            <Label text="Height" style="-fx-text-fill: #333; -fx-font-weight: bold;"/>
+                            <ComboBox fx:id="heightComboBox" style="-fx-padding: 8;"/>
+                        </VBox>
+                        <VBox spacing="5" style="-fx-min-width: 150;">
+                            <Label text="Weight (lbs)" style="-fx-text-fill: #333; -fx-font-weight: bold;"/>
+                            <TextField fx:id="weightField" promptText="e.g., 150" style="-fx-padding: 8;"/>
+                        </VBox>
+                    </HBox>
+                    
                     <!-- Allergies -->
                     <VBox spacing="5">
                         <Label text="Allergies (List)" style="-fx-text-fill: #333; -fx-font-weight: bold;"/>

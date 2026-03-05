@@ -26,6 +26,8 @@ public class ProfileController {
     @FXML private TextField phoneField;
     @FXML private ComboBox<String> bloodTypeComboBox;
     @FXML private ComboBox<String> vaccinationStatusComboBox;
+    @FXML private ComboBox<String> heightComboBox;
+    @FXML private TextField weightField;
     @FXML private TextArea allergiesArea;
     @FXML private TextArea currentMedicationsArea;
     @FXML private TextArea chronicConditionsArea;
@@ -50,6 +52,13 @@ public class ProfileController {
         genderComboBox.getItems().addAll("Not specified", "Male", "Female", "Other");
         bloodTypeComboBox.getItems().addAll("Not specified", "O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-");
         vaccinationStatusComboBox.getItems().addAll("Not specified", "Up to date", "Partially vaccinated", "Not vaccinated");
+        
+        // Setup height dropdown
+        heightComboBox.getItems().addAll(
+            "Not specified", "4'8\"", "4'9\"", "4'10\"", "4'11\"", "5'0\"", "5'1\"", "5'2\"", "5'3\"", "5'4\"",
+            "5'5\"", "5'6\"", "5'7\"", "5'8\"", "5'9\"", "5'10\"", "5'11\"", "6'0\"", "6'1\"", "6'2\"",
+            "6'3\"", "6'4\"", "6'5\"", "6'6\""
+        );
         
         // Setup age auto-calculation on date change
         dateOfBirthPicker.valueProperty().addListener((obs, oldVal, newVal) -> {
@@ -106,6 +115,12 @@ public class ProfileController {
         
         String vaccinationStatus = currentProfile.getVaccinationStatus() != null ? currentProfile.getVaccinationStatus() : "Not specified";
         vaccinationStatusComboBox.setValue(vaccinationStatus);
+        
+        String height = currentProfile.getHeight() != null ? currentProfile.getHeight() : "Not specified";
+        heightComboBox.setValue(height);
+        
+        Double weight = currentProfile.getWeight();
+        weightField.setText(weight != null ? weight.toString() : "");
         
         allergiesArea.setText(currentProfile.getAllergies() != null ? currentProfile.getAllergies() : "");
         currentMedicationsArea.setText(currentProfile.getCurrentMedications() != null ? currentProfile.getCurrentMedications() : "");
@@ -180,6 +195,20 @@ public class ProfileController {
             currentProfile.setVaccinationStatus(vaccinationStatusComboBox.getValue());
         }
         
+        if (heightComboBox.getValue() != null && !heightComboBox.getValue().equals("Not specified")) {
+            currentProfile.setHeight(heightComboBox.getValue());
+        }
+        
+        if (weightField.getText() != null && !weightField.getText().trim().isEmpty()) {
+            try {
+                Double weight = Double.parseDouble(weightField.getText().trim());
+                currentProfile.setWeight(weight);
+            } catch (NumberFormatException e) {
+                showStatus("Invalid weight value. Please enter a number.", true);
+                return;
+            }
+        }
+        
         if (allergiesArea.getText() != null) {
             currentProfile.setAllergies(allergiesArea.getText().trim());
         }
@@ -246,6 +275,8 @@ public class ProfileController {
         insuranceCompanyField.setEditable(editable);
         bloodTypeComboBox.setDisable(!editable);
         vaccinationStatusComboBox.setDisable(!editable);
+        heightComboBox.setDisable(!editable);
+        weightField.setEditable(editable);
         allergiesArea.setEditable(editable);
         medicalHistoryArea.setEditable(editable);
         currentMedicationsArea.setEditable(editable);
