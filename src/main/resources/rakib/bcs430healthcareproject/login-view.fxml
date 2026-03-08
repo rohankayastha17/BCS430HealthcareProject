@@ -15,6 +15,18 @@
             fx:controller="rakib.bcs430healthcareproject.LoginController"
             styleClass="root">
 
+    <!-- ===== Top Banner ===== -->
+    <top>
+        <VBox styleClass="app-header" alignment="CENTER">
+            <children>
+                <Label text="Health Connect" styleClass="app-name"/>
+                <Label text="Appointments made easy"
+                       styleClass="app-tagline"/>
+            </children>
+        </VBox>
+    </top>
+
+    <!-- ===== Login Card ===== -->
     <center>
         <StackPane>
             <VBox styleClass="card" maxWidth="420" spacing="14">
@@ -37,7 +49,8 @@
 
                 <Label fx:id="errorLabel" text="" managed="false" visible="false" styleClass="error"/>
 
-                <Button text="Log In" onAction="#onLogin"
+                <Button text="Log In"
+                        onAction="#onLogin"
                         styleClass="primary-btn"
                         maxWidth="1.7976931348623157E308"/>
 

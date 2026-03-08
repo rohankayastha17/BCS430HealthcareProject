@@ -8,32 +8,30 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
 import com.google.firebase.cloud.FirestoreClient;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import javax.net.ssl.HttpsURLConnection;
 
 /**
  * Service class for Firebase operations related to patient account management.
- * Handles user creation in Firebase Authentication and patient profile storage in Firestore.
- * Uses custom password hashing for login without requiring Firebase Web API Key.
+ * Handles user creation in Firebase Authentication and profile storage in Firestore.
  */
 public class FirebaseService {
 
     private final FirebaseAuth auth;
     private final Firestore firestore;
+
     private static final String PATIENTS_COLLECTION = "patients";
     private static final String USERS_COLLECTION = "users";
     private static final String DOCTORS_COLLECTION = "doctors";
+    private static final String APPOINTMENTS_COLLECTION = "appointments";
 
     public FirebaseService() {
         this.auth = FirebaseAuth.getInstance();
@@ -42,21 +40,10 @@ public class FirebaseService {
 
     /**
      * Creates a patient account in Firebase.
-     * 1. Creates a new user in Firebase Authentication with email and password
-     * 2. Stores patient profile data with hashed password in Firestore
-     *
-     * @param email    Patient's email address
-     * @param password Patient's password (must be at least 6 characters)
-     * @param name     Patient's full name
-     * @param zip      Patient's ZIP code (5 digits)
-     * @return CompletableFuture containing the patient ID (UID) on success
-     * @throws RuntimeException if patient creation fails
      */
-
     public CompletableFuture<String> createPatient(String email, String password, String name, String zip) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                // Step 1: Create user in Firebase Authentication
                 UserRecord.CreateRequest request = new UserRecord.CreateRequest()
                         .setEmail(email)
                         .setPassword(password)
@@ -65,19 +52,16 @@ public class FirebaseService {
                 UserRecord userRecord = auth.createUser(request);
                 String uid = userRecord.getUid();
 
-                // Step 2: Create PatientProfile with hashed password and store in Firestore
                 PatientProfile profile = new PatientProfile(uid, name, email, zip);
-                
-                // Hash password for storage
+
                 String passwordSalt = PasswordHasher.generateSalt();
                 String passwordHash = PasswordHasher.hashPassword(password, passwordSalt);
                 profile.setPasswordHash(passwordHash);
                 profile.setPasswordSalt(passwordSalt);
-                
-                // Store under /patients/{uid}
+
                 ApiFuture<?> future = firestore.collection(PATIENTS_COLLECTION).document(uid).set(profile);
-                future.get(); // Wait for completion
-                
+                future.get();
+
                 System.out.println("Patient created successfully with UID: " + uid);
                 return uid;
 
@@ -89,6 +73,7 @@ public class FirebaseService {
             }
         });
     }
+
     public CompletableFuture<String> createDoctor(
             String email,
             String password,
@@ -99,11 +84,11 @@ public class FirebaseService {
             String city,
             String state,
             String zip,
-            boolean acceptingNewPatients
+            boolean acceptingNewPatients,
+            Map<String, String> availability
     ) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                // 1) Create user in Firebase Authentication
                 UserRecord.CreateRequest request = new UserRecord.CreateRequest()
                         .setEmail(email)
                         .setPassword(password)
@@ -112,7 +97,6 @@ public class FirebaseService {
                 UserRecord userRecord = auth.createUser(request);
                 String uid = userRecord.getUid();
 
-                // 2) Build doctor profile object
                 DoctorProfile profile = new DoctorProfile(
                         uid,
                         name,
@@ -126,21 +110,18 @@ public class FirebaseService {
                         acceptingNewPatients
                 );
 
-                // 3) Hash password for Firestore storage (same approach as patient)
                 String passwordSalt = PasswordHasher.generateSalt();
                 String passwordHash = PasswordHasher.hashPassword(password, passwordSalt);
                 profile.setPasswordHash(passwordHash);
                 profile.setPasswordSalt(passwordSalt);
 
-                // Ensure timestamps exist even if constructor doesn’t set them
                 profile.setCreatedAt(System.currentTimeMillis());
                 profile.setUpdatedAt(System.currentTimeMillis());
                 profile.setRole("DOCTOR");
+                profile.setAvailability(availability);
 
-                // 4) Save doctor profile under /doctors/{uid}
                 firestore.collection(DOCTORS_COLLECTION).document(uid).set(profile).get();
 
-                // 5) Save a lightweight user record under /users/{uid} for role routing
                 Map<String, Object> userDoc = new HashMap<>();
                 userDoc.put("uid", uid);
                 userDoc.put("name", name);
@@ -165,6 +146,7 @@ public class FirebaseService {
             }
         });
     }
+
     public CompletableFuture<String> authenticateDoctor(String email, String password) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -181,16 +163,21 @@ public class FirebaseService {
                 }
 
                 DocumentSnapshot document = querySnapshot.getDocuments().get(0);
-                System.out.println("Doctor raw data: " + document.getData()); // DEBUG
+                System.out.println("Doctor raw data: " + document.getData());
 
                 DoctorProfile profile = document.toObject(DoctorProfile.class);
 
-                if (profile == null) throw new RuntimeException("Failed to load doctor profile.");
-                if (profile.getPasswordHash() == null || profile.getPasswordSalt() == null)
+                if (profile == null) {
+                    throw new RuntimeException("Failed to load doctor profile.");
+                }
+                if (profile.getPasswordHash() == null || profile.getPasswordSalt() == null) {
                     throw new RuntimeException("Account security data not found.");
+                }
 
                 boolean ok = PasswordHasher.verifyPassword(password, profile.getPasswordHash(), profile.getPasswordSalt());
-                if (!ok) throw new RuntimeException("Invalid email or password.");
+                if (!ok) {
+                    throw new RuntimeException("Invalid email or password.");
+                }
 
                 return profile.getUid();
 
@@ -201,26 +188,25 @@ public class FirebaseService {
     }
 
     public CompletableFuture<LoginResult> authenticateAnyUser(String email, String password) {
-
         String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
 
-        // Try PATIENT first
         return authenticateUser(normalizedEmail, password)
                 .thenApply(uid -> new LoginResult(uid, "PATIENT"))
-                .handle((result, ex) -> result)  // if patient fails, result becomes null (no crash)
-
-                // If patient not found or bad password, try DOCTOR
+                .handle((result, ex) -> result)
                 .thenCompose(result -> {
-                    if (result != null) return CompletableFuture.completedFuture(result);
+                    if (result != null) {
+                        return CompletableFuture.completedFuture(result);
+                    }
 
                     return authenticateDoctor(normalizedEmail, password)
                             .thenApply(uid -> new LoginResult(uid, "DOCTOR"));
                 });
     }
+
     public CompletableFuture<DoctorProfile> getDoctorProfile(String uid) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                ApiFuture<DocumentSnapshot> future = firestore.collection("doctors").document(uid).get();
+                ApiFuture<DocumentSnapshot> future = firestore.collection(DOCTORS_COLLECTION).document(uid).get();
                 DocumentSnapshot document = future.get();
 
                 if (document.exists()) {
@@ -238,59 +224,51 @@ public class FirebaseService {
 
     /**
      * Authenticates a patient with email and password using custom Firestore verification.
-     * NO EXTERNAL API KEY REQUIRED - uses local Firebase Admin SDK only.
-     *
-     * @param email    Patient's email
-     * @param password Patient's password
-     * @return CompletableFuture containing the patient's UID on successful authentication
      */
     public CompletableFuture<String> authenticateUser(String email, String password) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 System.out.println("Authenticating user with email: " + email);
-                
-                // Query Firestore for user by email
+
                 ApiFuture<QuerySnapshot> query = firestore.collection(PATIENTS_COLLECTION)
                         .whereEqualTo("email", email)
                         .get();
-                
+
                 QuerySnapshot querySnapshot = query.get();
-                
+
                 if (querySnapshot.isEmpty()) {
                     throw new RuntimeException("No account found with this email address.");
                 }
-                
+
                 if (querySnapshot.size() > 1) {
                     throw new RuntimeException("Multiple accounts found with this email. Please contact support.");
                 }
-                
-                // Get the patient profile
+
                 DocumentSnapshot document = querySnapshot.getDocuments().get(0);
                 PatientProfile profile = document.toObject(PatientProfile.class);
-                
+
                 if (profile == null) {
                     throw new RuntimeException("Failed to load patient profile.");
                 }
-                
-                // Verify password
+
                 if (profile.getPasswordHash() == null || profile.getPasswordSalt() == null) {
                     throw new RuntimeException("Account security data not found. Please contact support.");
                 }
-                
+
                 boolean passwordMatches = PasswordHasher.verifyPassword(
-                        password, 
-                        profile.getPasswordHash(), 
+                        password,
+                        profile.getPasswordHash(),
                         profile.getPasswordSalt()
                 );
-                
+
                 if (!passwordMatches) {
                     throw new RuntimeException("Invalid email or password.");
                 }
-                
+
                 String uid = profile.getUid();
                 System.out.println("User authenticated successfully with UID: " + uid);
                 return uid;
-                
+
             } catch (ExecutionException | InterruptedException e) {
                 System.err.println("Authentication database error: " + e.getMessage());
                 throw new RuntimeException("Authentication failed: Database error - " + e.getMessage(), e);
@@ -306,16 +284,13 @@ public class FirebaseService {
 
     /**
      * Retrieves a patient's profile from Firestore.
-     *
-     * @param uid Patient's UID
-     * @return CompletableFuture containing the patient profile data
      */
     public CompletableFuture<PatientProfile> getPatientProfile(String uid) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 ApiFuture<DocumentSnapshot> future = firestore.collection(PATIENTS_COLLECTION).document(uid).get();
                 DocumentSnapshot document = future.get();
-                
+
                 if (document.exists()) {
                     PatientProfile profile = document.toObject(PatientProfile.class);
                     System.out.println("Patient profile loaded for UID: " + uid);
@@ -331,17 +306,13 @@ public class FirebaseService {
 
     /**
      * Updates a patient's profile in Firestore.
-     *
-     * @param uid Patient's UID
-     * @param profile Updated patient profile
-     * @return CompletableFuture that completes when the update is done
      */
     public CompletableFuture<Void> updatePatientProfile(String uid, PatientProfile profile) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 profile.setUpdatedAt(System.currentTimeMillis());
                 ApiFuture<?> future = firestore.collection(PATIENTS_COLLECTION).document(uid).set(profile);
-                future.get(); // Wait for completion
+                future.get();
                 System.out.println("Patient profile updated for UID: " + uid);
                 return null;
             } catch (ExecutionException | InterruptedException e) {
@@ -352,10 +323,6 @@ public class FirebaseService {
 
     /**
      * Updates a doctor's profile in Firestore.
-     *
-     * @param uid Doctor's UID
-     * @param profile Updated doctor profile
-     * @return CompletableFuture that completes when the update is done
      */
     public CompletableFuture<Void> updateDoctorProfile(String uid, DoctorProfile profile) {
         return CompletableFuture.supplyAsync(() -> {
@@ -372,14 +339,293 @@ public class FirebaseService {
     }
 
     /**
-     * Handles Firebase Authentication exceptions and returns user-friendly error messages.
+     * Retrieves all doctors from the database.
+     */
+    public CompletableFuture<List<Doctor>> getAllDoctors() {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Doctor> doctors = new ArrayList<>();
+            try {
+                QuerySnapshot snapshot = firestore.collection(DOCTORS_COLLECTION).get().get();
+
+                for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                    Doctor doctor = new Doctor();
+                    doctor.setUid(doc.getId());
+                    doctor.setName(doc.getString("name"));
+                    doctor.setEmail(doc.getString("email"));
+                    doctor.setSpecialty(doc.getString("specialty"));
+                    doctor.setZip(doc.getString("zip"));
+                    doctor.setClinicName(doc.getString("clinicName"));
+                    doctor.setCity(doc.getString("city"));
+                    doctor.setState(doc.getString("state"));
+                    doctor.setAddress(doc.getString("address"));
+                    doctor.setAcceptingNewPatients(doc.getBoolean("acceptingNewPatients"));
+
+                    Object availabilityObj = doc.get("availability");
+                    if (availabilityObj instanceof Map) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, String> availability = (Map<String, String>) availabilityObj;
+                        doctor.setAvailability(availability);
+                    }
+
+                    doctors.add(doctor);
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to retrieve doctors: " + e.getMessage(), e);
+            }
+            return doctors;
+        });
+    }
+
+    /**
+     * Returns all appointments for a doctor on a specific date.
+     */
+    public CompletableFuture<List<Appointment>> getDoctorAppointmentsForDate(String doctorUid, LocalDate date) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Appointment> appointments = new ArrayList<>();
+
+            try {
+                long startOfDay = date.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
+                long endOfDay = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
+
+                QuerySnapshot snapshot = firestore.collection(APPOINTMENTS_COLLECTION)
+                        .whereEqualTo("doctorUid", doctorUid)
+                        .get()
+                        .get();
+
+                for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                    Appointment appointment = doc.toObject(Appointment.class);
+                    if (appointment == null || appointment.getAppointmentDateTime() == null) {
+                        continue;
+                    }
+
+                    long apptTime = appointment.getAppointmentDateTime();
+                    if (apptTime >= startOfDay && apptTime < endOfDay) {
+                        appointment.setAppointmentId(doc.getId());
+                        appointments.add(appointment);
+                    }
+                }
+
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to retrieve doctor appointments: " + e.getMessage(), e);
+            }
+
+            return appointments;
+        });
+    }
+
+    /**
+     * Checks whether a specific doctor time slot is available.
+     */
+    public CompletableFuture<Boolean> isTimeSlotAvailable(String doctorUid, long appointmentDateTime) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                LocalDate selectedDate = Instant.ofEpochMilli(appointmentDateTime)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate();
+
+                List<Appointment> appointments = getDoctorAppointmentsForDate(doctorUid, selectedDate).get();
+
+                for (Appointment appointment : appointments) {
+                    if (appointment.getAppointmentDateTime() != null
+                            && appointment.getAppointmentDateTime().longValue() == appointmentDateTime
+                            && appointment.getStatus() != null
+                            && !appointment.getStatus().equalsIgnoreCase("CANCELLED")) {
+                        return false;
+                    }
+                }
+
+                return true;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to check appointment availability: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Saves a new appointment after checking for conflicts.
+     */
+    public CompletableFuture<Boolean> saveAppointment(Appointment appointment) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                if (appointment == null) {
+                    throw new RuntimeException("Appointment cannot be null.");
+                }
+                if (appointment.getDoctorUid() == null || appointment.getDoctorUid().isBlank()) {
+                    throw new RuntimeException("Doctor ID is required.");
+                }
+                if (appointment.getPatientUid() == null || appointment.getPatientUid().isBlank()) {
+                    throw new RuntimeException("Patient ID is required.");
+                }
+                if (appointment.getAppointmentDateTime() == null) {
+                    throw new RuntimeException("Appointment date/time is required.");
+                }
+
+                boolean available = isTimeSlotAvailable(
+                        appointment.getDoctorUid(),
+                        appointment.getAppointmentDateTime()
+                ).get();
+
+                if (!available) {
+                    throw new RuntimeException("This slot has already been booked.");
+                }
+
+                String appointmentId = firestore.collection(APPOINTMENTS_COLLECTION).document().getId();
+                appointment.setAppointmentId(appointmentId);
+
+                if (appointment.getStatus() == null || appointment.getStatus().isBlank()) {
+                    appointment.setStatus("SCHEDULED");
+                }
+                if (appointment.getCreatedAt() == null) {
+                    appointment.setCreatedAt(System.currentTimeMillis());
+                }
+
+                firestore.collection(APPOINTMENTS_COLLECTION)
+                        .document(appointmentId)
+                        .set(appointment)
+                        .get();
+
+                System.out.println("Appointment saved: " + appointmentId);
+                return true;
+
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to save appointment: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Books an appointment with conflict prevention.
      *
-     * @param e FirebaseAuthException thrown by Firebase
-     * @return User-friendly error message
+     * Returns appointment ID for backward compatibility.
+     */
+    public CompletableFuture<String> bookAppointment(Appointment appointment) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                if (appointment == null) {
+                    throw new RuntimeException("Appointment cannot be null.");
+                }
+                if (appointment.getDoctorUid() == null || appointment.getDoctorUid().isBlank()) {
+                    throw new RuntimeException("Doctor ID is required.");
+                }
+                if (appointment.getPatientUid() == null || appointment.getPatientUid().isBlank()) {
+                    throw new RuntimeException("Patient ID is required.");
+                }
+                if (appointment.getAppointmentDateTime() == null) {
+                    throw new RuntimeException("Appointment date/time is required.");
+                }
+
+                boolean available = isTimeSlotAvailable(
+                        appointment.getDoctorUid(),
+                        appointment.getAppointmentDateTime()
+                ).get();
+
+                if (!available) {
+                    throw new RuntimeException("This slot has already been booked.");
+                }
+
+                String appointmentId = firestore.collection(APPOINTMENTS_COLLECTION).document().getId();
+                appointment.setAppointmentId(appointmentId);
+
+                if (appointment.getStatus() == null || appointment.getStatus().isBlank()) {
+                    appointment.setStatus("SCHEDULED");
+                }
+                if (appointment.getCreatedAt() == null) {
+                    appointment.setCreatedAt(System.currentTimeMillis());
+                }
+
+                firestore.collection(APPOINTMENTS_COLLECTION)
+                        .document(appointmentId)
+                        .set(appointment)
+                        .get();
+
+                System.out.println("Appointment booked: " + appointmentId);
+                return appointmentId;
+
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to book appointment: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Retrieves appointments for a patient.
+     */
+    public CompletableFuture<List<Appointment>> getPatientAppointments(String patientUid) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Appointment> appointments = new ArrayList<>();
+            try {
+                QuerySnapshot snapshot = firestore.collection(APPOINTMENTS_COLLECTION)
+                        .whereEqualTo("patientUid", patientUid)
+                        .get()
+                        .get();
+
+                for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                    Appointment appointment = doc.toObject(Appointment.class);
+                    if (appointment != null) {
+                        appointment.setAppointmentId(doc.getId());
+                        appointments.add(appointment);
+                    }
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to retrieve appointments: " + e.getMessage(), e);
+            }
+            return appointments;
+        });
+    }
+
+    /**
+     * Retrieves appointments for a doctor.
+     */
+    public CompletableFuture<List<Appointment>> getDoctorAppointments(String doctorUid) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Appointment> appointments = new ArrayList<>();
+            try {
+                QuerySnapshot snapshot = firestore.collection(APPOINTMENTS_COLLECTION)
+                        .whereEqualTo("doctorUid", doctorUid)
+                        .get()
+                        .get();
+
+                for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                    Appointment appointment = doc.toObject(Appointment.class);
+                    if (appointment != null) {
+                        appointment.setAppointmentId(doc.getId());
+                        appointments.add(appointment);
+                    }
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to retrieve doctor appointments: " + e.getMessage(), e);
+            }
+            return appointments;
+        });
+    }
+
+    /**
+     * Update an existing appointment.
+     */
+    public CompletableFuture<Void> updateAppointment(Appointment appointment) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                if (appointment.getAppointmentId() == null || appointment.getAppointmentId().isEmpty()) {
+                    throw new RuntimeException("Appointment ID is required for update");
+                }
+
+                firestore.collection(APPOINTMENTS_COLLECTION)
+                        .document(appointment.getAppointmentId())
+                        .set(appointment)
+                        .get();
+
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to update appointment: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Handles Firebase Authentication exceptions and returns user-friendly error messages.
      */
     private String handleAuthException(FirebaseAuthException e) {
         String details = e.getMessage().toLowerCase();
-        
+
         if (details.contains("email-already-exists")) {
             return "Email is already registered.";
         } else if (details.contains("invalid-password") || details.contains("weak-password")) {
@@ -391,15 +637,12 @@ public class FirebaseService {
         } else if (details.contains("invalid-argument")) {
             return "Invalid input provided.";
         }
-        
+
         return "Failed to create account: " + e.getMessage();
     }
 
     /**
      * Handles Firebase authentication error messages from REST API.
-     *
-     * @param errorMessage Error message from Firebase
-     * @return User-friendly error message
      */
     private String handleAuthError(String errorMessage) {
         if (errorMessage.contains("INVALID_LOGIN_CREDENTIALS") || errorMessage.contains("INVALID_PASSWORD")) {
@@ -415,110 +658,4 @@ public class FirebaseService {
         }
         return "Login failed: " + errorMessage;
     }
-
-    /**
-     * Retrieves all doctors from the database.
-     *
-     * @return CompletableFuture containing list of all doctors
-     */
-    public CompletableFuture<java.util.List<Doctor>> getAllDoctors() {
-        return CompletableFuture.supplyAsync(() -> {
-            java.util.List<Doctor> doctors = new java.util.ArrayList<>();
-            try {
-                com.google.cloud.firestore.QuerySnapshot snapshot = 
-                    firestore.collection(DOCTORS_COLLECTION).get().get();
-                
-                for (com.google.cloud.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
-                    Doctor doctor = new Doctor();
-                    doctor.setUid(doc.getId());
-                    doctor.setName(doc.getString("name"));
-                    doctor.setEmail(doc.getString("email"));
-                    doctor.setSpecialty(doc.getString("specialty"));
-                    doctor.setZip(doc.getString("zip"));
-                    doctor.setClinicName(doc.getString("clinicName"));
-                    doctor.setCity(doc.getString("city"));
-                    doctor.setState(doc.getString("state"));
-                    doctor.setAddress(doc.getString("address"));
-                    doctor.setAcceptingNewPatients(doc.getBoolean("acceptingNewPatients"));
-                    
-                    doctors.add(doctor);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to retrieve doctors: " + e.getMessage());
-            }
-            return doctors;
-        });
-    }
-
-    /**
-     * Books an appointment with a doctor.
-     *
-     * @param appointment Appointment object containing details
-     * @return CompletableFuture containing the appointment ID
-     */
-    public CompletableFuture<String> bookAppointment(Appointment appointment) {
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                // Generate appointment ID
-                String appointmentId = firestore.collection("appointments").document().getId();
-                appointment.setAppointmentId(appointmentId);
-
-                // Save appointment
-                firestore.collection("appointments").document(appointmentId).set(appointment).get();
-
-                System.out.println("Appointment booked: " + appointmentId);
-                return appointmentId;
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to book appointment: " + e.getMessage());
-            }
-        });
-    }
-
-    /**
-     * Retrieves appointments for a patient.
-     *
-     * @param patientUid The patient's UID
-     * @return CompletableFuture containing list of patient's appointments
-     */
-    public CompletableFuture<java.util.List<Appointment>> getPatientAppointments(String patientUid) {
-        return CompletableFuture.supplyAsync(() -> {
-            java.util.List<Appointment> appointments = new java.util.ArrayList<>();
-            try {
-                com.google.cloud.firestore.QuerySnapshot snapshot = 
-                    firestore.collection("appointments")
-                        .whereEqualTo("patientUid", patientUid)
-                        .get().get();
-                
-                for (com.google.cloud.firestore.DocumentSnapshot doc : snapshot.getDocuments()) {
-                    Appointment appointment = doc.toObject(Appointment.class);
-                    appointments.add(appointment);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to retrieve appointments: " + e.getMessage());
-            }
-            return appointments;
-        });
-    }
-
-    /**
-     * Update an existing appointment
-     */
-    public CompletableFuture<Void> updateAppointment(Appointment appointment) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                if (appointment.getAppointmentId() == null || appointment.getAppointmentId().isEmpty()) {
-                    throw new RuntimeException("Appointment ID is required for update");
-                }
-                
-                firestore.collection("appointments")
-                    .document(appointment.getAppointmentId())
-                    .set(appointment)
-                    .get();
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to update appointment: " + e.getMessage());
-            }
-        });
-    }
 }
-
-

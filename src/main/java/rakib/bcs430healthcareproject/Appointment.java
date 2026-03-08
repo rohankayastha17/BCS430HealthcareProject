@@ -20,7 +20,7 @@ public class Appointment {
     public Appointment() {
     }
 
-    public Appointment(String patientUid, String doctorUid, String patientName, 
+    public Appointment(String patientUid, String doctorUid, String patientName,
                        String doctorName, Long appointmentDateTime) {
         this.patientUid = patientUid;
         this.doctorUid = doctorUid;
@@ -31,7 +31,6 @@ public class Appointment {
         this.createdAt = System.currentTimeMillis();
     }
 
-    // Getters and Setters
     public String getAppointmentId() {
         return appointmentId;
     }
