@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
@@ -12,187 +11,262 @@
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
             fx:controller="rakib.bcs430healthcareproject.DoctorProfileController"
-            stylesheets="@app.css">
+            stylesheets="@app.css"
+            styleClass="root page-shell">
 
-    <!-- Top Bar -->
+    <!-- Top Header -->
     <top>
-        <VBox style="-fx-background-color: #0f766e; -fx-padding: 15;">
-            <HBox spacing="15" style="-fx-alignment: center-left;">
-                <Button fx:id="backButton" onAction="#onBack" text="← Back"
-                        style="-fx-padding: 8; -fx-font-size: 12; -fx-background-color: rgba(255,255,255,0.18); -fx-text-fill: white;"/>
-                <Label fx:id="titleLabel" text="Doctor Profile"
-                       style="-fx-text-fill: white; -fx-font-size: 24; -fx-font-weight: bold;" />
+        <VBox>
+            <HBox styleClass="top-header">
+                <Button fx:id="backButton"
+                        onAction="#onBack"
+                        text="← Back"
+                        styleClass="button header-btn" />
+
+                <Label text="HealthConnect"
+                       styleClass="top-header-title" />
+
+                <Region HBox.hgrow="ALWAYS" />
+
+                <Label fx:id="titleLabel"
+                       text="Doctor Profile"
+                       styleClass="top-header-subtitle" />
             </HBox>
-            <Label fx:id="statusLabel" text=""
-                   style="-fx-text-fill: #dcfce7; -fx-font-size: 11; -fx-padding: 5 0 0 0;"
-                   visible="false" managed="false"/>
+
+            <HBox styleClass="top-subbar">
+                <Label fx:id="statusLabel"
+                       text=""
+                       styleClass="top-header-status"
+                       visible="false"
+                       managed="false" />
+            </HBox>
         </VBox>
     </top>
 
     <!-- Main Content -->
     <center>
-        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;" hbarPolicy="NEVER">
-            <VBox style="-fx-padding: 30; -fx-spacing: 20; -fx-background-color: transparent;">
+        <ScrollPane fitToWidth="true"
+                    hbarPolicy="NEVER"
+                    styleClass="scroll-pane clean-scroll">
+            <content>
+                <VBox styleClass="page-content">
 
-                <!-- Basic Information -->
-                <VBox styleClass="card" style="-fx-padding: 20; -fx-spacing: 15;">
-                    <Label text="Basic Information" style="-fx-text-fill: #0f766e; -fx-font-size: 16; -fx-font-weight: bold;"/>
-
-                    <VBox spacing="5">
-                        <Label text="Full Name *" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                        <TextField fx:id="nameField" promptText="Dr. Full Name"/>
+                    <!-- Page Intro -->
+                    <VBox styleClass="page-intro">
+                        <Label text="Doctor Profile"
+                               styleClass="page-intro-title" />
+                        <Label text="Manage professional details, clinic information, office hours, and appointment preferences."
+                               wrapText="true"
+                               styleClass="page-intro-subtitle" />
                     </VBox>
 
-                    <HBox spacing="20">
-                        <VBox spacing="5" HBox.hgrow="ALWAYS">
-                            <Label text="Specialty *" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                            <TextField fx:id="specialtyField" promptText="Cardiology, Dermatology, etc."/>
-                        </VBox>
-                        <VBox spacing="5" style="-fx-min-width: 180;">
-                            <Label text="License # (NPI/License)" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                            <TextField fx:id="licenseField" promptText="Optional"/>
-                        </VBox>
-                    </HBox>
+                    <!-- Basic Information -->
+                    <VBox styleClass="panel-card">
+                        <Label text="Basic Information"
+                               styleClass="panel-title" />
 
-                    <VBox spacing="5">
-                        <Label text="Bio" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                        <TextArea fx:id="bioArea"
-                                  promptText="Short description about your experience, education, and care approach..."
-                                  wrapText="true"
-                                  style="-fx-min-height: 90;"/>
+                        <VBox styleClass="form-section">
+                            <Label text="Full Name *"
+                                   styleClass="form-label" />
+                            <TextField fx:id="nameField" promptText="Dr. Full Name" />
+                        </VBox>
+
+                        <HBox spacing="20">
+                            <VBox styleClass="form-section" HBox.hgrow="ALWAYS">
+                                <Label text="Specialty *"
+                                       styleClass="form-label" />
+                                <TextField fx:id="specialtyField" promptText="Cardiology, Dermatology, etc." />
+                            </VBox>
+
+                            <VBox styleClass="form-section" minWidth="180">
+                                <Label text="License # (NPI/License)"
+                                       styleClass="form-label" />
+                                <TextField fx:id="licenseField" promptText="Optional" />
+                            </VBox>
+                        </HBox>
+
+                        <VBox styleClass="form-section">
+                            <Label text="Bio"
+                                   styleClass="form-label" />
+                            <TextArea fx:id="bioArea"
+                                      promptText="Short description about your experience, education, and care approach..."
+                                      wrapText="true"
+                                      prefRowCount="4" />
+                        </VBox>
                     </VBox>
+
+                    <!-- Clinic / Location -->
+                    <VBox styleClass="panel-card">
+                        <Label text="Clinic / Location"
+                               styleClass="panel-title" />
+
+                        <VBox styleClass="form-section">
+                            <Label text="Clinic Name *"
+                                   styleClass="form-label" />
+                            <TextField fx:id="clinicNameField" promptText="Clinic / Practice name" />
+                        </VBox>
+
+                        <VBox styleClass="form-section">
+                            <Label text="Address *"
+                                   styleClass="form-label" />
+                            <TextField fx:id="addressField" promptText="123 Main St" />
+                        </VBox>
+
+                        <HBox spacing="20">
+                            <VBox styleClass="form-section" HBox.hgrow="ALWAYS">
+                                <Label text="City *"
+                                       styleClass="form-label" />
+                                <TextField fx:id="cityField" promptText="Farmingdale" />
+                            </VBox>
+
+                            <VBox styleClass="form-section" minWidth="90">
+                                <Label text="State *"
+                                       styleClass="form-label" />
+                                <TextField fx:id="stateField" promptText="NY" />
+                            </VBox>
+
+                            <VBox styleClass="form-section" minWidth="120">
+                                <Label text="ZIP *"
+                                       styleClass="form-label" />
+                                <TextField fx:id="zipField" promptText="11735" />
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Office Details -->
+                    <VBox styleClass="panel-card">
+                        <Label text="Office Details"
+                               styleClass="panel-title" />
+
+                        <HBox spacing="20">
+                            <VBox styleClass="form-section" HBox.hgrow="ALWAYS">
+                                <Label text="Phone"
+                                       styleClass="form-label" />
+                                <TextField fx:id="phoneField" promptText="(555) 555-5555" />
+                            </VBox>
+
+                            <VBox styleClass="form-section" HBox.hgrow="ALWAYS">
+                                <Label text="Email (Public)"
+                                       styleClass="form-label" />
+                                <TextField fx:id="publicEmailField" promptText="office@example.com" />
+                            </VBox>
+                        </HBox>
+
+                        <VBox styleClass="form-section">
+                            <Label text="Accepting New Patients"
+                                   styleClass="form-label" />
+                            <CheckBox fx:id="acceptingNewPatientsCheck"
+                                      text="Yes, accepting new patients" />
+                        </VBox>
+
+                        <VBox styleClass="form-section">
+                            <Label text="Insurance Accepted"
+                                   styleClass="form-label" />
+                            <TextArea fx:id="insuranceArea"
+                                      promptText="List insurances (comma-separated): Aetna, BCBS, United..."
+                                      wrapText="true"
+                                      prefRowCount="3" />
+                        </VBox>
+
+                        <VBox styleClass="form-section">
+                            <Label text="Office Hours"
+                                   styleClass="form-label" />
+
+                            <GridPane hgap="12" vgap="8">
+                                <columnConstraints>
+                                    <ColumnConstraints percentWidth="22.0" />
+                                    <ColumnConstraints percentWidth="78.0" />
+                                </columnConstraints>
+
+                                <Label text="Monday" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+                                <ComboBox fx:id="mondayField" GridPane.rowIndex="0" GridPane.columnIndex="1" maxWidth="Infinity" />
+
+                                <Label text="Tuesday" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+                                <ComboBox fx:id="tuesdayField" GridPane.rowIndex="1" GridPane.columnIndex="1" maxWidth="Infinity" />
+
+                                <Label text="Wednesday" GridPane.rowIndex="2" GridPane.columnIndex="0" />
+                                <ComboBox fx:id="wednesdayField" GridPane.rowIndex="2" GridPane.columnIndex="1" maxWidth="Infinity" />
+
+                                <Label text="Thursday" GridPane.rowIndex="3" GridPane.columnIndex="0" />
+                                <ComboBox fx:id="thursdayField" GridPane.rowIndex="3" GridPane.columnIndex="1" maxWidth="Infinity" />
+
+                                <Label text="Friday" GridPane.rowIndex="4" GridPane.columnIndex="0" />
+                                <ComboBox fx:id="fridayField" GridPane.rowIndex="4" GridPane.columnIndex="1" maxWidth="Infinity" />
+
+                                <Label text="Saturday" GridPane.rowIndex="5" GridPane.columnIndex="0" />
+                                <ComboBox fx:id="saturdayField" GridPane.rowIndex="5" GridPane.columnIndex="1" maxWidth="Infinity" />
+
+                                <Label text="Sunday" GridPane.rowIndex="6" GridPane.columnIndex="0" />
+                                <ComboBox fx:id="sundayField" GridPane.rowIndex="6" GridPane.columnIndex="1" maxWidth="Infinity" />
+                            </GridPane>
+
+                            <!-- legacy area kept hidden unless needed -->
+                            <TextArea fx:id="hoursArea"
+                                      promptText="Mon-Fri 9am-5pm&#10;Sat 9am-1pm..."
+                                      wrapText="true"
+                                      prefRowCount="3"
+                                      visible="false"
+                                      managed="false" />
+                        </VBox>
+                    </VBox>
+
+                    <!-- Appointment Preferences -->
+                    <VBox styleClass="panel-card">
+                        <Label text="Appointment Preferences"
+                               styleClass="panel-title" />
+
+                        <VBox styleClass="form-section">
+                            <Label text="Visit Type"
+                                   styleClass="form-label" />
+                            <ComboBox fx:id="visitTypeComboBox"
+                                      promptText="Select visit type"
+                                      maxWidth="Infinity" />
+                        </VBox>
+
+                        <VBox styleClass="form-section">
+                            <Label text="Notes"
+                                   styleClass="form-label" />
+                            <TextArea fx:id="notesArea"
+                                      promptText="Any additional notes for patients..."
+                                      wrapText="true"
+                                      prefRowCount="4" />
+                        </VBox>
+                    </VBox>
+
+                    <VBox minHeight="30" />
                 </VBox>
-
-                <!-- Clinic / Location -->
-                <VBox styleClass="card" style="-fx-padding: 20; -fx-spacing: 15;">
-                    <Label text="Clinic / Location" style="-fx-text-fill: #0f766e; -fx-font-size: 16; -fx-font-weight: bold;"/>
-
-                    <VBox spacing="5">
-                        <Label text="Clinic Name *" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                        <TextField fx:id="clinicNameField" promptText="Clinic / Practice name"/>
-                    </VBox>
-
-                    <VBox spacing="5">
-                        <Label text="Address *" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                        <TextField fx:id="addressField" promptText="123 Main St"/>
-                    </VBox>
-
-                    <HBox spacing="20">
-                        <VBox spacing="5" HBox.hgrow="ALWAYS">
-                            <Label text="City *" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                            <TextField fx:id="cityField" promptText="Farmingdale"/>
-                        </VBox>
-                        <VBox spacing="5" style="-fx-min-width: 90;">
-                            <Label text="State *" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                            <TextField fx:id="stateField" promptText="NY"/>
-                        </VBox>
-                        <VBox spacing="5" style="-fx-min-width: 120;">
-                            <Label text="ZIP *" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                            <TextField fx:id="zipField" promptText="11735"/>
-                        </VBox>
-                    </HBox>
-                </VBox>
-
-                <!-- Office Details -->
-                <VBox styleClass="card" style="-fx-padding: 20; -fx-spacing: 15;">
-                    <Label text="Office Details" style="-fx-text-fill: #0f766e; -fx-font-size: 16; -fx-font-weight: bold;"/>
-
-                    <HBox spacing="20">
-                        <VBox spacing="5" HBox.hgrow="ALWAYS">
-                            <Label text="Phone" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                            <TextField fx:id="phoneField" promptText="(555) 555-5555"/>
-                        </VBox>
-                        <VBox spacing="5" HBox.hgrow="ALWAYS">
-                            <Label text="Email (Public)" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                            <TextField fx:id="publicEmailField" promptText="office@example.com"/>
-                        </VBox>
-                    </HBox>
-
-                    <VBox spacing="5">
-                        <Label text="Accepting New Patients" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                        <CheckBox fx:id="acceptingNewPatientsCheck" text="Yes, accepting new patients"/>
-                    </VBox>
-
-                    <VBox spacing="5">
-                        <Label text="Insurance Accepted" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                        <TextArea fx:id="insuranceArea" promptText="List insurances (comma-separated): Aetna, BCBS, United..."
-                                  wrapText="true" style="-fx-min-height: 70;"/>
-                    </VBox>
-
-                    <VBox spacing="5">
-                        <Label text="Office Hours" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                        <GridPane hgap="10" vgap="5" style="-fx-padding: 0;">
-                            <columnConstraints>
-                                <ColumnConstraints percentWidth="20.0" />
-                                <ColumnConstraints percentWidth="80.0" />
-                            </columnConstraints>
-
-                            <Label text="Monday" GridPane.rowIndex="0" GridPane.columnIndex="0" />
-                            <ComboBox fx:id="mondayField" style="-fx-padding: 8;" GridPane.rowIndex="0" GridPane.columnIndex="1" />
-
-                            <Label text="Tuesday" GridPane.rowIndex="1" GridPane.columnIndex="0" />
-                            <ComboBox fx:id="tuesdayField" style="-fx-padding: 8;" GridPane.rowIndex="1" GridPane.columnIndex="1" />
-
-                            <Label text="Wednesday" GridPane.rowIndex="2" GridPane.columnIndex="0" />
-                            <ComboBox fx:id="wednesdayField" style="-fx-padding: 8;" GridPane.rowIndex="2" GridPane.columnIndex="1" />
-
-                            <Label text="Thursday" GridPane.rowIndex="3" GridPane.columnIndex="0" />
-                            <ComboBox fx:id="thursdayField" style="-fx-padding: 8;" GridPane.rowIndex="3" GridPane.columnIndex="1" />
-
-                            <Label text="Friday" GridPane.rowIndex="4" GridPane.columnIndex="0" />
-                            <ComboBox fx:id="fridayField" style="-fx-padding: 8;" GridPane.rowIndex="4" GridPane.columnIndex="1" />
-
-                            <Label text="Saturday" GridPane.rowIndex="5" GridPane.columnIndex="0" />
-                            <ComboBox fx:id="saturdayField" style="-fx-padding: 8;" GridPane.rowIndex="5" GridPane.columnIndex="1" />
-
-                            <Label text="Sunday" GridPane.rowIndex="6" GridPane.columnIndex="0" />
-                            <ComboBox fx:id="sundayField" style="-fx-padding: 8;" GridPane.rowIndex="6" GridPane.columnIndex="1" />
-                        </GridPane>
-                        <!-- legacy area kept hidden unless needed -->
-                        <TextArea fx:id="hoursArea" promptText="Mon-Fri 9am-5pm\nSat 9am-1pm..."
-                                  wrapText="true" style="-fx-min-height: 70;" visible="false" managed="false"/>
-                    </VBox>
-                </VBox>
-
-                <!-- Appointment Preferences -->
-                <VBox styleClass="card" style="-fx-padding: 20; -fx-spacing: 15;">
-                    <Label text="Appointment Preferences" style="-fx-text-fill: #0f766e; -fx-font-size: 16; -fx-font-weight: bold;"/>
-
-                    <VBox spacing="5">
-                        <Label text="Visit Type" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                        <ComboBox fx:id="visitTypeComboBox" promptText="Select visit type"/>
-                    </VBox>
-
-                    <VBox spacing="5">
-                        <Label text="Notes" style="-fx-text-fill: #0f172a; -fx-font-weight: bold;"/>
-                        <TextArea fx:id="notesArea" promptText="Any additional notes for patients..." wrapText="true"
-                                  style="-fx-min-height: 80;"/>
-                    </VBox>
-                </VBox>
-
-                <VBox style="-fx-min-height: 30;" />
-            </VBox>
+            </content>
         </ScrollPane>
     </center>
 
     <!-- Bottom Buttons -->
     <bottom>
-        <HBox style="-fx-background-color: #ffffff; -fx-padding: 15; -fx-alignment: center-right; -fx-spacing: 10; -fx-border-color: #d1e7e4; -fx-border-width: 1 0 0 0;">
-            <Button fx:id="editButton" onAction="#onEdit" text="Edit Profile"
-                    styleClass="primary-btn"
-                    style="-fx-padding: 12 24; -fx-font-size: 12;"/>
+        <HBox styleClass="footer-bar">
+            <Button fx:id="editButton"
+                    onAction="#onEdit"
+                    text="Edit Profile"
+                    styleClass="button primary-btn" />
 
-            <Button fx:id="saveButton" onAction="#onSave" text="Save Changes"
-                    style="-fx-padding: 12 24; -fx-font-size: 12; -fx-background-color: #16a34a; -fx-text-fill: white;"
-                    managed="false" visible="false"/>
+            <Button fx:id="saveButton"
+                    onAction="#onSave"
+                    text="Save Changes"
+                    styleClass="button success-btn"
+                    managed="false"
+                    visible="false" />
 
-            <Button fx:id="cancelButton" onAction="#onCancel" text="Cancel"
-                    style="-fx-padding: 12 24; -fx-font-size: 12; -fx-background-color: #ef4444; -fx-text-fill: white;"
-                    managed="false" visible="false"/>
+            <Button fx:id="cancelButton"
+                    onAction="#onCancel"
+                    text="Cancel"
+                    styleClass="button cancel-btn"
+                    managed="false"
+                    visible="false" />
         </HBox>
     </bottom>
 </BorderPane>

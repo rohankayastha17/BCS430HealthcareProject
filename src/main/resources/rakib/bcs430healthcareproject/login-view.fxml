@@ -8,56 +8,92 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml"
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
             fx:controller="rakib.bcs430healthcareproject.LoginController"
-            styleClass="root">
+            style="-fx-background-color:#F4F9F9;">
 
-    <!-- ===== Top Banner ===== -->
+    <!-- ===== Top Header (Same Style as Dashboard) ===== -->
     <top>
-        <VBox styleClass="app-header" alignment="CENTER">
-            <children>
-                <Label text="Health Connect" styleClass="app-name"/>
-                <Label text="Appointments made easy"
-                       styleClass="app-tagline"/>
-            </children>
-        </VBox>
+        <HBox style="-fx-background-color:#0F766E; -fx-padding:18 24; -fx-alignment:center-left;">
+            <Label text="HealthConnect"
+                   style="-fx-text-fill:white; -fx-font-size:22; -fx-font-weight:bold;"/>
+
+            <Region HBox.hgrow="ALWAYS"/>
+
+            <Label text="Customer Portal"
+                   style="-fx-text-fill:#CCFBF1; -fx-font-size:14;"/>
+        </HBox>
     </top>
 
-    <!-- ===== Login Card ===== -->
+    <!-- ===== Login Panel ===== -->
     <center>
         <StackPane>
-            <VBox styleClass="card" maxWidth="420" spacing="14">
-                <padding>
-                    <Insets top="26" right="26" bottom="26" left="26"/>
-                </padding>
+            <VBox spacing="14"
+                  maxWidth="420"
+                  style="-fx-background-color:white;
+                         -fx-background-radius:12;
+                         -fx-padding:28;
+                         -fx-border-color:#E5E7EB;
+                         -fx-border-radius:12;">
 
-                <Label text="Welcome!" styleClass="title"/>
-                <Label text="Log in to continue" styleClass="subtitle"/>
+                <Label text="Welcome"
+                       style="-fx-font-size:22; -fx-font-weight:bold; -fx-text-fill:#134E4A;"/>
 
-                <VBox spacing="8">
-                    <Label text="Email" styleClass="label"/>
-                    <TextField fx:id="emailField" promptText="name@example.com"/>
+                <Label text="Log in to your account"
+                       style="-fx-font-size:13; -fx-text-fill:#6B7280;"/>
+
+                <!-- Email -->
+                <VBox spacing="6">
+                    <Label text="Email"
+                           style="-fx-font-size:13; -fx-text-fill:#374151;"/>
+
+                    <TextField fx:id="emailField"
+                               promptText="name@example.com"
+                               style="-fx-background-radius:8; -fx-padding:8;"/>
                 </VBox>
 
-                <VBox spacing="8">
-                    <Label text="Password" styleClass="label"/>
-                    <PasswordField fx:id="passwordField" promptText="••••••••"/>
+                <!-- Password -->
+                <VBox spacing="6">
+                    <Label text="Password"
+                           style="-fx-font-size:13; -fx-text-fill:#374151;"/>
+
+                    <PasswordField fx:id="passwordField"
+                                   promptText="••••••••"
+                                   style="-fx-background-radius:8; -fx-padding:8;"/>
                 </VBox>
 
-                <Label fx:id="errorLabel" text="" managed="false" visible="false" styleClass="error"/>
+                <!-- Error -->
+                <Label fx:id="errorLabel"
+                       text=""
+                       managed="false"
+                       visible="false"
+                       style="-fx-text-fill:#DC2626; -fx-font-size:12;"/>
 
+                <!-- Login Button -->
                 <Button text="Log In"
                         onAction="#onLogin"
-                        styleClass="primary-btn"
-                        maxWidth="1.7976931348623157E308"/>
+                        maxWidth="Infinity"
+                        style="-fx-background-color:#0F766E;
+                               -fx-text-fill:white;
+                               -fx-font-weight:bold;
+                               -fx-background-radius:8;
+                               -fx-padding:10 16;"/>
 
-                <HBox spacing="6" styleClass="row-center">
-                    <Label text="No account?" styleClass="muted"/>
-                    <Hyperlink text="Create one" onAction="#onGoSignup"/>
+                <!-- Signup Link -->
+                <HBox spacing="6" alignment="CENTER">
+                    <Label text="No account?"
+                           style="-fx-text-fill:#6B7280;"/>
+
+                    <Hyperlink text="Create one"
+                               onAction="#onGoSignup"
+                               style="-fx-text-fill:#0F766E;"/>
                 </HBox>
+
             </VBox>
         </StackPane>
     </center>
