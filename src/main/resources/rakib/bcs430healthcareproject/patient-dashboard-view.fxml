@@ -1,51 +1,93 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
-<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml" fx:controller="rakib.bcs430healthcareproject.PatientDashboardController" stylesheets="@app.css">
-    <!-- Top Bar -->
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="rakib.bcs430healthcareproject.PatientDashboardController"
+            stylesheets="@app.css">
+
+    <!-- Top Header + Tabs -->
     <top>
-        <VBox style="-fx-background-color: #2C3E50; -fx-padding: 15;">
-            <Label fx:id="welcomeLabel" style="-fx-text-fill: white; -fx-font-size: 24; -fx-font-weight: bold;" />
+        <VBox spacing="0">
+
+            <!-- Header -->
+            <HBox style="-fx-background-color: #0F766E; -fx-padding: 18 24; -fx-alignment: center-left; -fx-spacing: 15;">
+                <Label text="HealthConnect"
+                       style="-fx-text-fill: white; -fx-font-size: 22; -fx-font-weight: bold;" />
+
+                <Region HBox.hgrow="ALWAYS" />
+
+                <Label fx:id="welcomeLabel"
+                       style="-fx-text-fill: white; -fx-font-size: 18; -fx-font-weight: bold;" />
+
+                <Button fx:id="logoutButton"
+                        text="Logout"
+                        onAction="#onLogout"
+                        style="-fx-background-color: #14B8A6; -fx-text-fill: white; -fx-font-size: 13; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;" />
+            </HBox>
+
+            <!-- Tabs / Taskbar -->
+            <HBox style="-fx-background-color: #F0FDFA; -fx-padding: 12 24; -fx-spacing: 10; -fx-border-color: #D1FAE5; -fx-border-width: 0 0 1 0;">
+
+                <Button text="Dashboard"
+                        style="-fx-background-color: #0F766E; -fx-text-fill: white; -fx-font-size: 13; -fx-font-weight: bold; -fx-background-radius: 20; -fx-padding: 10 18;" />
+
+                <Button fx:id="appointmentsButton"
+                        text="My Appointments"
+                        onAction="#onAppointments"
+                        style="-fx-background-color: white; -fx-text-fill: #0F766E; -fx-font-size: 13; -fx-font-weight: bold; -fx-border-color: #14B8A6; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 10 18;" />
+
+                <Button fx:id="findDoctorButton"
+                        text="Find a Doctor"
+                        onAction="#onFindDoctor"
+                        style="-fx-background-color: white; -fx-text-fill: #0F766E; -fx-font-size: 13; -fx-font-weight: bold; -fx-border-color: #14B8A6; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 10 18;" />
+
+                <Button fx:id="prescriptionsButton"
+                        text="My Prescriptions"
+                        onAction="#onPrescriptions"
+                        style="-fx-background-color: white; -fx-text-fill: #0F766E; -fx-font-size: 13; -fx-font-weight: bold; -fx-border-color: #14B8A6; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 10 18;" />
+
+                <Button fx:id="profileButton"
+                        text="Edit Profile"
+                        onAction="#onProfile"
+                        style="-fx-background-color: white; -fx-text-fill: #0F766E; -fx-font-size: 13; -fx-font-weight: bold; -fx-border-color: #14B8A6; -fx-border-radius: 20; -fx-background-radius: 20; -fx-padding: 10 18;" />
+
+            </HBox>
+
         </VBox>
     </top>
 
     <!-- Main Content -->
     <center>
-        <VBox style="-fx-padding: 30; -fx-spacing: 20;">
-            <!-- Patient Info Section -->
-            <VBox style="-fx-border-color: #E8E8E8; -fx-border-radius: 5; -fx-padding: 20; -fx-spacing: 10;">
-                <Label style="-fx-text-fill: #2C3E50; -fx-font-size: 16; -fx-font-weight: bold;" text="Patient Information" />
-                <Label fx:id="patientNameLabel" style="-fx-text-fill: #555555; -fx-font-size: 14;" />
-                <Label fx:id="patientEmailLabel" style="-fx-text-fill: #555555; -fx-font-size: 14;" />
+        <VBox style="-fx-padding: 30; -fx-spacing: 20; -fx-background-color: #F8FAFC;">
+
+            <!-- Dashboard Title Panel -->
+            <VBox style="-fx-background-color: linear-gradient(to right, #0F766E, #14B8A6); -fx-background-radius: 12; -fx-padding: 24; -fx-spacing: 8;">
+                <Label text="Patient Dashboard"
+                       style="-fx-text-fill: white; -fx-font-size: 24; -fx-font-weight: bold;" />
+                <Label text="Welcome to your healthcare portal."
+                       style="-fx-text-fill: #CCFBF1; -fx-font-size: 14;" />
             </VBox>
 
-            <!-- Quick Actions Section -->
-            <Label style="-fx-text-fill: #2C3E50; -fx-font-size: 16; -fx-font-weight: bold;" text="Quick Actions" />
-            
-            <!-- Action Buttons Grid -->
-            <HBox style="-fx-spacing: 15; -fx-wrap-text: true;">
-                <Button fx:id="appointmentsButton" onAction="#onAppointments" style="-fx-padding: 15; -fx-font-size: 14; -fx-min-width: 150;" text="My Appointments" />
-                <Button fx:id="findDoctorButton" onAction="#onFindDoctor" style="-fx-padding: 15; -fx-font-size: 14; -fx-min-width: 150;" text="Find a Doctor" />
-                <Button fx:id="prescriptionsButton" onAction="#onPrescriptions" style="-fx-padding: 15; -fx-font-size: 14; -fx-min-width: 150;" text="My Prescriptions" />
-                <Button fx:id="profileButton" onAction="#onProfile" style="-fx-padding: 15; -fx-font-size: 14; -fx-min-width: 150;" text="Edit Profile" />
-            </HBox>
+            <!-- Patient Information Panel -->
+            <VBox style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20; -fx-spacing: 10; -fx-border-color: #D1FAE5; -fx-border-radius: 12;">
+                <Label text="Patient Information"
+                       style="-fx-text-fill: #0F766E; -fx-font-size: 16; -fx-font-weight: bold;" />
 
-            <!-- Spacer -->
-            <VBox style="-fx-min-height: 50;" />
+                <Label fx:id="patientNameLabel"
+                       style="-fx-text-fill: #555555; -fx-font-size: 14;" />
+
+                <Label fx:id="patientEmailLabel"
+                       style="-fx-text-fill: #555555; -fx-font-size: 14;" />
+            </VBox>
+
         </VBox>
     </center>
 
-    <!-- Footer with Logout -->
-    <bottom>
-        <HBox style="-fx-background-color: #f5f5f5; -fx-padding: 15; -fx-alignment: center-right; -fx-spacing: 10;">
-            <Button fx:id="logoutButton" onAction="#onLogout" style="-fx-padding: 10; -fx-font-size: 12;" text="Logout" />
-        </HBox>
-    </bottom>
 </BorderPane>
