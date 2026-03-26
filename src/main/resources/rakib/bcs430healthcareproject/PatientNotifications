@@ -1,0 +1,30 @@
+package rakib.bcs430healthcareproject;
+
+import java.time.LocalDateTime;
+public class PatientNotifications {
+
+    private Long id;
+    private Long patientId;
+    private String patientEmail;
+    private String title;
+    private String message;
+    private boolean read;
+    private LocalDateTime createdAt;
+    private LocalDateTime readAt;
+
+    public Notification(Long patientId, String patientEmail, String title, String message) {
+
+        this.patientId = patientId;
+        this.patientEmail = patientEmail;
+        this.title = title;
+        this.message = message;
+        this.read = false;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public void markAsRead() {
+        this.read = true;
+        this.readAt = LocalDateTime.now();
+    }
+    
+}
