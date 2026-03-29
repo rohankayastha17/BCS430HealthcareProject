@@ -1,0 +1,30 @@
+ async function sendWithRetry(sendFn, notificationId, db, maxAttempts = 3) {
+  const [rows] = await db.execute(
+    'SELECT * FROM notifications WHERE id = ?',
+    [notificationId]
+  );
+  const notification = rows[0];
+
+  try {
+    await sendFn(notification);
+
+    await db.execute(
+      `UPDATE notifications
+       SET status = 'sent', sent_at = NOW(), last_attempt_at = NOW(), attempt_count = attempt_count + 1
+       WHERE id = ?`,
+      [notificationId]
+    );
+  } catch (err) {
+    const nextAttempt = notification.attempt_count + 1;
+    const status = nextAttempt >= maxAttempts ? 'failed' : 'pending';
+
+    await db.execute(
+      `UPDATE notifications
+       SET status = ?, last_attempt_at = NOW(), attempt_count = attempt_count + 1
+       WHERE id = ?`,
+      [status, notificationId]
+    );
+
+    throw err;
+  }
+}
