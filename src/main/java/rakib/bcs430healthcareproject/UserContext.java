@@ -12,6 +12,7 @@ public class UserContext {
 
     private PatientProfile patientProfile;
     private DoctorProfile doctorProfile;
+    private PharmacyProfile pharmacyProfile;
 
     // For patient appointment booking
     private Doctor selectedDoctor;
@@ -39,6 +40,15 @@ public class UserContext {
         this.role = "DOCTOR";
         this.doctorProfile = profile;
         this.patientProfile = null;
+        this.pharmacyProfile = null;
+    }
+
+    public void setPharmacyUserData(String uid, PharmacyProfile profile) {
+        this.uid = uid;
+        this.role = "PHARMACY";
+        this.pharmacyProfile = profile;
+        this.doctorProfile = null;
+        this.patientProfile = null;
     }
 
     public void clearUserData() {
@@ -46,6 +56,7 @@ public class UserContext {
         this.role = null;
         this.patientProfile = null;
         this.doctorProfile = null;
+        this.pharmacyProfile = null;
         this.selectedDoctor = null;
         this.selectedPatientProfile = null;
     }
@@ -70,6 +81,10 @@ public class UserContext {
         return uid != null && role != null;
     }
 
+    public boolean isPharmacy() {
+        return "PHARMACY".equals(role);
+    }
+
     public PatientProfile getProfile() {
         return patientProfile;
     }
@@ -78,12 +93,19 @@ public class UserContext {
         return doctorProfile;
     }
 
+    public PharmacyProfile getPharmacyProfile() {
+        return pharmacyProfile;
+    }
+
     public String getEmail() {
         if (isPatient() && patientProfile != null) {
             return patientProfile.getEmail();
         }
         if (isDoctor() && doctorProfile != null) {
             return doctorProfile.getEmail();
+        }
+        if (isPharmacy() && pharmacyProfile != null) {
+            return pharmacyProfile.getEmail();
         }
         return null;
     }
@@ -94,6 +116,9 @@ public class UserContext {
         }
         if (isDoctor() && doctorProfile != null) {
             return doctorProfile.getName();
+        }
+        if (isPharmacy() && pharmacyProfile != null) {
+            return pharmacyProfile.getPharmacyName();
         }
         return null;
     }
@@ -107,6 +132,12 @@ public class UserContext {
     public void updateDoctorProfile(DoctorProfile updatedProfile) {
         if (isDoctor()) {
             this.doctorProfile = updatedProfile;
+        }
+    }
+
+    public void updatePharmacyProfile(PharmacyProfile updatedProfile) {
+        if (isPharmacy()) {
+            this.pharmacyProfile = updatedProfile;
         }
     }
 

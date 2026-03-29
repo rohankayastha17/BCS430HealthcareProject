@@ -88,6 +88,15 @@
                         </VBox>
                     </HBox>
                 </VBox>
+
+                <VBox style="-fx-border-color: #E8E8E8; -fx-border-radius: 5; -fx-padding: 20; -fx-spacing: 15; -fx-background-color: white;">
+                    <Label text="Preferred Pickup Pharmacy" style="-fx-text-fill: #2C3E50; -fx-font-size: 16; -fx-font-weight: bold;"/>
+
+                    <VBox spacing="5">
+                        <Label text="Pharmacy Account" style="-fx-text-fill: #333; -fx-font-weight: bold;"/>
+                        <ComboBox fx:id="preferredPickupPharmacyComboBox" style="-fx-padding: 8;"/>
+                    </VBox>
+                </VBox>
                 
                 <!-- Medical Information Section -->
                 <VBox style="-fx-border-color: #E8E8E8; -fx-border-radius: 5; -fx-padding: 20; -fx-spacing: 15; -fx-background-color: white;">

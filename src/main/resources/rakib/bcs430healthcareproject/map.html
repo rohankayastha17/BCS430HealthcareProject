@@ -82,6 +82,21 @@
             }
         }
 
+        function addReadOnlyMarkerAtCoords(lat, lon, name, infoHtml, address) {
+            try {
+                var marker = L.marker([lat, lon]).addTo(map);
+                var popupContent = "<div style='max-width:220px;'>" +
+                    "<strong>" + (name || "Location") + "</strong><br>" +
+                    (infoHtml || "") +
+                    "<div style='margin-top:4px;font-size:11px;color:#555;'>" + (address || "") + "</div>" +
+                    "</div>";
+                marker.bindPopup(popupContent);
+                markers.push(marker);
+            } catch (e) {
+                console.error("Error adding read-only marker: " + e.message);
+            }
+        }
+
         // Geocode an address and add a marker
         function addMarker(address, name, infoHtml, uid, lat, lon) {
             console.log("addMarker called with address: '" + address + "', name: '" + name + "', lat: " + lat + ", lon: " + lon);
@@ -129,6 +144,41 @@
             }
         }
 
+        function addPharmacyMarker(address, name, infoHtml, lat, lon) {
+            if (lat !== undefined && lat !== null && lon !== undefined && lon !== null &&
+                !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lon))) {
+                addReadOnlyMarkerAtCoords(parseFloat(lat), parseFloat(lon), name, infoHtml, address);
+                fitMapToMarkers();
+                return;
+            }
+
+            if (!address || address.trim().length === 0) {
+                return;
+            }
+
+            var url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" +
+                encodeURIComponent(address);
+            fetch(url, {
+                headers: {
+                    "Accept-Language": "en"
+                }
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (!data || data.length === 0) {
+                    addReadOnlyMarkerAtCoords(40.75, -73.45, name, infoHtml, address);
+                    fitMapToMarkers();
+                    return;
+                }
+                addReadOnlyMarkerAtCoords(parseFloat(data[0].lat), parseFloat(data[0].lon), name, infoHtml, address);
+                fitMapToMarkers();
+            })
+            .catch(function() {
+                addReadOnlyMarkerAtCoords(40.75, -73.45, name, infoHtml, address);
+                fitMapToMarkers();
+            });
+        }
+
         // Fit map to show all markers
         function fitMapToMarkers() {
             if (markers.length === 0) {
@@ -142,6 +192,7 @@
         // Expose functions to JavaFX
         window.clearMarkers = clearMarkers;
         window.addMarker = addMarker;
+        window.addPharmacyMarker = addPharmacyMarker;
         window.fitMapToMarkers = fitMapToMarkers;
     </script>
 </body>

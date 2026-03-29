@@ -51,10 +51,28 @@
                     </VBox>
 
                     <VBox spacing="6">
-                        <Label text="Pharmacy Address *"
+                        <Label text="Street Address *"
                                style="-fx-text-fill: #334155; -fx-font-weight: bold;" />
-                        <TextArea fx:id="pharmacyAddressArea" promptText="Enter the pharmacy address" wrapText="true" prefRowCount="3" />
+                        <TextField fx:id="pharmacyStreetAddressField" promptText="123 Main St" />
                     </VBox>
+
+                    <HBox spacing="12">
+                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                            <Label text="City *"
+                                   style="-fx-text-fill: #334155; -fx-font-weight: bold;" />
+                            <TextField fx:id="pharmacyCityField" promptText="Farmingdale" />
+                        </VBox>
+                        <VBox spacing="6" prefWidth="90">
+                            <Label text="State *"
+                                   style="-fx-text-fill: #334155; -fx-font-weight: bold;" />
+                            <TextField fx:id="pharmacyStateField" promptText="NY" />
+                        </VBox>
+                        <VBox spacing="6" prefWidth="120">
+                            <Label text="ZIP *"
+                                   style="-fx-text-fill: #334155; -fx-font-weight: bold;" />
+                            <TextField fx:id="pharmacyZipField" promptText="11735" />
+                        </VBox>
+                    </HBox>
 
                     <VBox spacing="6">
                         <Label text="Pharmacy Phone Number *"
@@ -68,9 +86,28 @@
                            style="-fx-text-fill: #0F766E; -fx-font-size: 15; -fx-font-weight: bold;" />
 
                     <VBox spacing="6">
-                        <Label text="Medication Information *"
+                        <Label text="Medication Name *"
                                style="-fx-text-fill: #334155; -fx-font-weight: bold;" />
-                        <TextArea fx:id="medicationInformationArea" promptText="Enter medication name, dosage, quantity, and refill details" wrapText="true" prefRowCount="4" />
+                        <TextField fx:id="medicationNameField" promptText="Enter medication name" />
+                    </VBox>
+
+                    <HBox spacing="12">
+                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                            <Label text="Dosage *"
+                                   style="-fx-text-fill: #334155; -fx-font-weight: bold;" />
+                            <TextField fx:id="dosageField" promptText="e.g., 10 mg tablet" />
+                        </VBox>
+                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                            <Label text="Quantity *"
+                                   style="-fx-text-fill: #334155; -fx-font-weight: bold;" />
+                            <TextField fx:id="quantityField" promptText="e.g., 30 tablets" />
+                        </VBox>
+                    </HBox>
+
+                    <VBox spacing="6">
+                        <Label text="Refill Details *"
+                               style="-fx-text-fill: #334155; -fx-font-weight: bold;" />
+                        <TextField fx:id="refillDetailsField" promptText="e.g., 2 refills remaining" />
                     </VBox>
 
                     <VBox spacing="6">
