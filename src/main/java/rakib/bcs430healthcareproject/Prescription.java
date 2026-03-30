@@ -7,6 +7,7 @@ public class Prescription {
 
     public static final String STATUS_SENT = "SENT";
     public static final String STATUS_FILLED = "FILLED";
+    public static final String STATUS_REFILL_REQUESTED = "REFILL_REQUESTED";
 
     private String prescriptionId;
     private String doctorUid;
@@ -15,13 +16,22 @@ public class Prescription {
     private String patientName;
     private String pharmacyName;
     private String pharmacyAddress;
+    private String pharmacyAddressNormalized;
     private String pharmacyPhoneNumber;
+    private String medicationName;
+    private String dosage;
+    private String quantity;
+    private String refillDetails;
+    private Integer remainingRefills;
     private String medicationInformation;
     private String instructions;
     private String status;
     private String filledBy;
     private Long filledAt;
     private Long createdAt;
+    private Boolean refillRequested;
+    private String refillRequestedBy;
+    private Long refillRequestedAt;
 
     public Prescription() {
     }
@@ -82,12 +92,60 @@ public class Prescription {
         this.pharmacyAddress = pharmacyAddress;
     }
 
+    public String getPharmacyAddressNormalized() {
+        return pharmacyAddressNormalized;
+    }
+
+    public void setPharmacyAddressNormalized(String pharmacyAddressNormalized) {
+        this.pharmacyAddressNormalized = pharmacyAddressNormalized;
+    }
+
     public String getPharmacyPhoneNumber() {
         return pharmacyPhoneNumber;
     }
 
     public void setPharmacyPhoneNumber(String pharmacyPhoneNumber) {
         this.pharmacyPhoneNumber = pharmacyPhoneNumber;
+    }
+
+    public String getMedicationName() {
+        return medicationName;
+    }
+
+    public void setMedicationName(String medicationName) {
+        this.medicationName = medicationName;
+    }
+
+    public String getDosage() {
+        return dosage;
+    }
+
+    public void setDosage(String dosage) {
+        this.dosage = dosage;
+    }
+
+    public String getQuantity() {
+        return quantity;
+    }
+
+    public void setQuantity(String quantity) {
+        this.quantity = quantity;
+    }
+
+    public String getRefillDetails() {
+        return refillDetails;
+    }
+
+    public void setRefillDetails(String refillDetails) {
+        this.refillDetails = refillDetails;
+    }
+
+    public Integer getRemainingRefills() {
+        return remainingRefills;
+    }
+
+    public void setRemainingRefills(Integer remainingRefills) {
+        this.remainingRefills = remainingRefills;
     }
 
     public String getMedicationInformation() {
@@ -136,5 +194,29 @@ public class Prescription {
 
     public void setCreatedAt(Long createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Boolean getRefillRequested() {
+        return refillRequested;
+    }
+
+    public void setRefillRequested(Boolean refillRequested) {
+        this.refillRequested = refillRequested;
+    }
+
+    public String getRefillRequestedBy() {
+        return refillRequestedBy;
+    }
+
+    public void setRefillRequestedBy(String refillRequestedBy) {
+        this.refillRequestedBy = refillRequestedBy;
+    }
+
+    public Long getRefillRequestedAt() {
+        return refillRequestedAt;
+    }
+
+    public void setRefillRequestedAt(Long refillRequestedAt) {
+        this.refillRequestedAt = refillRequestedAt;
     }
 }

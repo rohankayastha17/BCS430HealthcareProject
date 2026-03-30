@@ -9,6 +9,9 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Controller for the Patient Profile View.
  * Allows patients to view and edit their profile information.
@@ -22,6 +25,7 @@ public class ProfileController {
     @FXML private ComboBox<String> genderComboBox;
     @FXML private TextField insuranceNumberField;
     @FXML private TextField insuranceCompanyField;
+    @FXML private ComboBox<PharmacyOption> preferredPickupPharmacyComboBox;
     @FXML private TextField emailField;
     @FXML private TextField phoneField;
     @FXML private ComboBox<String> bloodTypeComboBox;
@@ -43,6 +47,7 @@ public class ProfileController {
     private PatientProfile currentProfile;
     private boolean isEditMode = false;
     private boolean isDoctorReadOnlyView = false;
+    private List<PharmacyOption> pharmacyOptions = new ArrayList<>();
 
     @FXML
     public void initialize() {
@@ -53,6 +58,7 @@ public class ProfileController {
         genderComboBox.getItems().addAll("Not specified", "Male", "Female", "Other");
         bloodTypeComboBox.getItems().addAll("Not specified", "O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-");
         vaccinationStatusComboBox.getItems().addAll("Not specified", "Up to date", "Partially vaccinated", "Not vaccinated");
+        preferredPickupPharmacyComboBox.getItems().add(new PharmacyOption(null, "No preferred pharmacy selected", "", ""));
         
         // Setup height dropdown
         heightComboBox.getItems().addAll(
@@ -90,6 +96,7 @@ public class ProfileController {
             showStatus("Profile not available", true);
         }
 
+        loadPharmacyOptions();
         updateButtonVisibility();
     }
 
@@ -117,6 +124,7 @@ public class ProfileController {
         
         insuranceNumberField.setText(currentProfile.getInsuranceNumber() != null ? currentProfile.getInsuranceNumber() : "");
         insuranceCompanyField.setText(currentProfile.getInsuranceCompany() != null ? currentProfile.getInsuranceCompany() : "");
+        selectPreferredPharmacy();
         
         String bloodType = currentProfile.getBloodType() != null ? currentProfile.getBloodType() : "Not specified";
         bloodTypeComboBox.setValue(bloodType);
@@ -201,6 +209,19 @@ public class ProfileController {
         
         if (insuranceCompanyField.getText() != null) {
             currentProfile.setInsuranceCompany(insuranceCompanyField.getText().trim());
+        }
+
+        PharmacyOption preferredOption = preferredPickupPharmacyComboBox.getValue();
+        if (preferredOption == null || preferredOption.uid == null || preferredOption.uid.isBlank()) {
+            currentProfile.setPreferredPharmacyUid(null);
+            currentProfile.setPreferredPharmacyName(null);
+            currentProfile.setPreferredPharmacyAddress(null);
+            currentProfile.setPreferredPharmacyPhoneNumber(null);
+        } else {
+            currentProfile.setPreferredPharmacyUid(preferredOption.uid);
+            currentProfile.setPreferredPharmacyName(preferredOption.name);
+            currentProfile.setPreferredPharmacyAddress(preferredOption.address);
+            currentProfile.setPreferredPharmacyPhoneNumber(preferredOption.phoneNumber);
         }
         
         if (bloodTypeComboBox.getValue() != null) {
@@ -295,6 +316,7 @@ public class ProfileController {
         genderComboBox.setDisable(!editable);
         insuranceNumberField.setEditable(editable);
         insuranceCompanyField.setEditable(editable);
+        preferredPickupPharmacyComboBox.setDisable(!editable);
         bloodTypeComboBox.setDisable(!editable);
         vaccinationStatusComboBox.setDisable(!editable);
         heightComboBox.setDisable(!editable);
@@ -380,5 +402,84 @@ public class ProfileController {
         }
         
         return age;
+    }
+
+    private void loadPharmacyOptions() {
+        firebaseService.getAllPharmacies()
+                .thenAccept(pharmacies -> Platform.runLater(() -> {
+                    pharmacyOptions = new ArrayList<>();
+                    preferredPickupPharmacyComboBox.getItems().clear();
+                    preferredPickupPharmacyComboBox.getItems().add(new PharmacyOption(null, "No preferred pharmacy selected", "", ""));
+
+                    for (PharmacyProfile pharmacy : pharmacies) {
+                        pharmacyOptions.add(new PharmacyOption(
+                                pharmacy.getUid(),
+                                defaultText(pharmacy.getPharmacyName(), "Pharmacy"),
+                                defaultText(pharmacy.getFullAddress(), "Address not provided"),
+                                defaultText(pharmacy.getPhoneNumber(), "Phone not provided")
+                        ));
+                    }
+
+                    preferredPickupPharmacyComboBox.getItems().addAll(pharmacyOptions);
+                    selectPreferredPharmacy();
+                }))
+                .exceptionally(e -> {
+                    Platform.runLater(() -> showStatus("Failed to load pharmacy options: " + e.getMessage(), true));
+                    return null;
+                });
+    }
+
+    private void selectPreferredPharmacy() {
+        if (preferredPickupPharmacyComboBox == null || currentProfile == null) {
+            return;
+        }
+
+        String preferredUid = currentProfile.getPreferredPharmacyUid();
+        if (preferredUid != null && !preferredUid.isBlank()) {
+            for (PharmacyOption option : preferredPickupPharmacyComboBox.getItems()) {
+                if (preferredUid.equals(option.uid)) {
+                    preferredPickupPharmacyComboBox.setValue(option);
+                    return;
+                }
+            }
+        }
+
+        String preferredAddress = currentProfile.getPreferredPharmacyAddress();
+        if (preferredAddress != null && !preferredAddress.isBlank()) {
+            for (PharmacyOption option : preferredPickupPharmacyComboBox.getItems()) {
+                if (preferredAddress.equalsIgnoreCase(option.address)) {
+                    preferredPickupPharmacyComboBox.setValue(option);
+                    return;
+                }
+            }
+        }
+
+        preferredPickupPharmacyComboBox.getSelectionModel().selectFirst();
+    }
+
+    private String defaultText(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private static class PharmacyOption {
+        private final String uid;
+        private final String name;
+        private final String address;
+        private final String phoneNumber;
+
+        private PharmacyOption(String uid, String name, String address, String phoneNumber) {
+            this.uid = uid;
+            this.name = name;
+            this.address = address;
+            this.phoneNumber = phoneNumber;
+        }
+
+        @Override
+        public String toString() {
+            if (uid == null || uid.isBlank()) {
+                return name;
+            }
+            return name + " | " + address + " | " + phoneNumber;
+        }
     }
 }

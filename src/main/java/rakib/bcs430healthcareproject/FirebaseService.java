@@ -31,6 +31,7 @@ public class FirebaseService {
     private static final String PATIENTS_COLLECTION = "patients";
     private static final String USERS_COLLECTION = "users";
     private static final String DOCTORS_COLLECTION = "doctors";
+    private static final String PHARMACIES_COLLECTION = "pharmacies";
     private static final String APPOINTMENTS_COLLECTION = "appointments";
     private static final String PRESCRIPTIONS_COLLECTION = "prescriptions";
     private static final String MESSAGES_COLLECTION = "messages";
@@ -147,6 +148,81 @@ public class FirebaseService {
         });
     }
 
+    public CompletableFuture<String> createPharmacy(
+            String email,
+            String password,
+            String pharmacyName,
+            String phoneNumber,
+            String addressLine,
+            String city,
+            String state,
+            String zip
+    ) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
+                String fullAddress = PharmacyProfile.buildFullAddress(addressLine, city, state, zip);
+                String normalizedAddress = AddressNormalizer.normalize(fullAddress);
+
+                QuerySnapshot existingLocation = firestore.collection(PHARMACIES_COLLECTION)
+                        .whereEqualTo("addressNormalized", normalizedAddress)
+                        .get()
+                        .get();
+
+                if (!existingLocation.isEmpty()) {
+                    throw new RuntimeException("That pharmacy location has already been claimed.");
+                }
+
+                UserRecord.CreateRequest request = new UserRecord.CreateRequest()
+                        .setEmail(normalizedEmail)
+                        .setPassword(password)
+                        .setDisplayName(pharmacyName);
+
+                UserRecord userRecord = auth.createUser(request);
+                String uid = userRecord.getUid();
+
+                PharmacyProfile profile = new PharmacyProfile(
+                        uid,
+                        pharmacyName,
+                        normalizedEmail,
+                        phoneNumber,
+                        addressLine,
+                        city,
+                        state,
+                        zip
+                );
+
+                String passwordSalt = PasswordHasher.generateSalt();
+                String passwordHash = PasswordHasher.hashPassword(password, passwordSalt);
+                profile.setPasswordHash(passwordHash);
+                profile.setPasswordSalt(passwordSalt);
+                profile.setRole("PHARMACY");
+                profile.setCreatedAt(System.currentTimeMillis());
+                profile.setUpdatedAt(System.currentTimeMillis());
+
+                firestore.collection(PHARMACIES_COLLECTION).document(uid).set(profile).get();
+
+                Map<String, Object> userDoc = new HashMap<>();
+                userDoc.put("uid", uid);
+                userDoc.put("name", pharmacyName);
+                userDoc.put("email", normalizedEmail);
+                userDoc.put("role", "PHARMACY");
+                userDoc.put("createdAt", System.currentTimeMillis());
+
+                firestore.collection(USERS_COLLECTION).document(uid).set(userDoc).get();
+
+                return uid;
+            } catch (FirebaseAuthException e) {
+                throw new RuntimeException(handleAuthException(e));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Pharmacy creation interrupted.", e);
+            } catch (ExecutionException e) {
+                throw new RuntimeException("Failed to save pharmacy profile: " + e.getMessage(), e);
+            }
+        });
+    }
+
     public CompletableFuture<String> authenticateDoctor(String email, String password) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -187,6 +263,41 @@ public class FirebaseService {
         });
     }
 
+    public CompletableFuture<String> authenticatePharmacy(String email, String password) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                ApiFuture<QuerySnapshot> query = firestore.collection(PHARMACIES_COLLECTION)
+                        .whereEqualTo("email", email)
+                        .get();
+
+                QuerySnapshot querySnapshot = query.get();
+
+                if (querySnapshot.isEmpty()) {
+                    throw new RuntimeException("No account found with this email address.");
+                }
+
+                DocumentSnapshot document = querySnapshot.getDocuments().get(0);
+                PharmacyProfile profile = document.toObject(PharmacyProfile.class);
+
+                if (profile == null) {
+                    throw new RuntimeException("Failed to load pharmacy profile.");
+                }
+                if (profile.getPasswordHash() == null || profile.getPasswordSalt() == null) {
+                    throw new RuntimeException("Account security data not found.");
+                }
+
+                boolean ok = PasswordHasher.verifyPassword(password, profile.getPasswordHash(), profile.getPasswordSalt());
+                if (!ok) {
+                    throw new RuntimeException("Invalid email or password.");
+                }
+
+                return profile.getUid();
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException("Authentication failed: " + e.getMessage(), e);
+            }
+        });
+    }
+
     public CompletableFuture<LoginResult> authenticateAnyUser(String email, String password) {
         String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
 
@@ -218,6 +329,67 @@ public class FirebaseService {
                 }
             } catch (ExecutionException | InterruptedException e) {
                 throw new RuntimeException("Failed to retrieve doctor profile: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    public CompletableFuture<PharmacyProfile> getPharmacyProfile(String uid) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                ApiFuture<DocumentSnapshot> future = firestore.collection(PHARMACIES_COLLECTION).document(uid).get();
+                DocumentSnapshot document = future.get();
+
+                if (document.exists()) {
+                    PharmacyProfile profile = document.toObject(PharmacyProfile.class);
+                    if (profile != null && (profile.getAddressNormalized() == null || profile.getAddressNormalized().isBlank())) {
+                        profile.setAddressNormalized(AddressNormalizer.normalize(profile.getFullAddress()));
+                    }
+                    return profile;
+                } else {
+                    throw new RuntimeException("Pharmacy profile not found");
+                }
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException("Failed to retrieve pharmacy profile: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    public CompletableFuture<List<PharmacyProfile>> getAllPharmacies() {
+        return CompletableFuture.supplyAsync(() -> {
+            List<PharmacyProfile> pharmacies = new ArrayList<>();
+            try {
+                QuerySnapshot snapshot = firestore.collection(PHARMACIES_COLLECTION).get().get();
+
+                for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                    PharmacyProfile profile = doc.toObject(PharmacyProfile.class);
+                    if (profile == null) {
+                        continue;
+                    }
+                    if (profile.getUid() == null || profile.getUid().isBlank()) {
+                        profile.setUid(doc.getId());
+                    }
+                    if (profile.getFullAddress() == null || profile.getFullAddress().isBlank()) {
+                        profile.setFullAddress(PharmacyProfile.buildFullAddress(
+                                profile.getAddressLine(),
+                                profile.getCity(),
+                                profile.getState(),
+                                profile.getZip()
+                        ));
+                    }
+                    if (profile.getAddressNormalized() == null || profile.getAddressNormalized().isBlank()) {
+                        profile.setAddressNormalized(AddressNormalizer.normalize(profile.getFullAddress()));
+                    }
+                    pharmacies.add(profile);
+                }
+
+                pharmacies.sort((left, right) -> {
+                    String leftName = left.getPharmacyName() != null ? left.getPharmacyName() : "";
+                    String rightName = right.getPharmacyName() != null ? right.getPharmacyName() : "";
+                    return leftName.compareToIgnoreCase(rightName);
+                });
+                return pharmacies;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to retrieve pharmacies: " + e.getMessage(), e);
             }
         });
     }
@@ -824,6 +996,26 @@ public class FirebaseService {
                 if (prescription.getMedicationInformation() == null || prescription.getMedicationInformation().isBlank()) {
                     throw new RuntimeException("Medication information is required.");
                 }
+                if (prescription.getMedicationName() == null || prescription.getMedicationName().isBlank()) {
+                    throw new RuntimeException("Medication name is required.");
+                }
+                if (prescription.getDosage() == null || prescription.getDosage().isBlank()) {
+                    throw new RuntimeException("Dosage is required.");
+                }
+                if (prescription.getQuantity() == null || prescription.getQuantity().isBlank()) {
+                    throw new RuntimeException("Quantity is required.");
+                }
+                if (prescription.getRefillDetails() == null || prescription.getRefillDetails().isBlank()) {
+                    throw new RuntimeException("Refill details are required.");
+                }
+                if (prescription.getRemainingRefills() == null) {
+                    Integer parsedRemainingRefills = PrescriptionRefillSupport.parseRemainingRefills(prescription.getRefillDetails());
+                    if (parsedRemainingRefills == null) {
+                        throw new RuntimeException("Refill details must include a valid refill count.");
+                    }
+                    prescription.setRemainingRefills(parsedRemainingRefills);
+                    prescription.setRefillDetails(PrescriptionRefillSupport.formatRemainingRefills(parsedRemainingRefills));
+                }
                 if (prescription.getInstructions() == null || prescription.getInstructions().isBlank()) {
                     throw new RuntimeException("Prescription instructions are required.");
                 }
@@ -836,6 +1028,12 @@ public class FirebaseService {
                 }
                 if (prescription.getCreatedAt() == null) {
                     prescription.setCreatedAt(System.currentTimeMillis());
+                }
+                if (prescription.getRefillRequested() == null) {
+                    prescription.setRefillRequested(false);
+                }
+                if (prescription.getPharmacyAddressNormalized() == null || prescription.getPharmacyAddressNormalized().isBlank()) {
+                    prescription.setPharmacyAddressNormalized(AddressNormalizer.normalize(prescription.getPharmacyAddress()));
                 }
 
                 firestore.collection(PRESCRIPTIONS_COLLECTION)
@@ -977,6 +1175,34 @@ public class FirebaseService {
         });
     }
 
+    public CompletableFuture<List<Prescription>> getPrescriptionsForPharmacy(String pharmacyAddressNormalized) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Prescription> prescriptions = new ArrayList<>();
+            try {
+                QuerySnapshot snapshot = firestore.collection(PRESCRIPTIONS_COLLECTION)
+                        .whereEqualTo("pharmacyAddressNormalized", pharmacyAddressNormalized)
+                        .get()
+                        .get();
+
+                for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                    Prescription prescription = doc.toObject(Prescription.class);
+                    if (prescription != null) {
+                        prescription.setPrescriptionId(doc.getId());
+                        prescriptions.add(prescription);
+                    }
+                }
+
+                prescriptions.sort((left, right) -> Long.compare(
+                        right.getCreatedAt() != null ? right.getCreatedAt() : 0L,
+                        left.getCreatedAt() != null ? left.getCreatedAt() : 0L
+                ));
+                return prescriptions;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to retrieve pharmacy prescriptions: " + e.getMessage(), e);
+            }
+        });
+    }
+
     public CompletableFuture<Void> updatePrescription(Prescription prescription) {
         return CompletableFuture.runAsync(() -> {
             try {
@@ -990,6 +1216,140 @@ public class FirebaseService {
                         .get();
             } catch (Exception e) {
                 throw new RuntimeException("Failed to update prescription: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    public CompletableFuture<Void> markPrescriptionFilled(String prescriptionId, PharmacyProfile pharmacyProfile) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                if (prescriptionId == null || prescriptionId.isBlank()) {
+                    throw new RuntimeException("Prescription ID is required.");
+                }
+                if (pharmacyProfile == null || pharmacyProfile.getAddressNormalized() == null || pharmacyProfile.getAddressNormalized().isBlank()) {
+                    throw new RuntimeException("Pharmacy account is required.");
+                }
+
+                DocumentSnapshot document = firestore.collection(PRESCRIPTIONS_COLLECTION)
+                        .document(prescriptionId)
+                        .get()
+                        .get();
+
+                if (!document.exists()) {
+                    throw new RuntimeException("Prescription not found.");
+                }
+
+                Prescription prescription = document.toObject(Prescription.class);
+                if (prescription == null) {
+                    throw new RuntimeException("Prescription could not be loaded.");
+                }
+
+                String prescriptionAddress = prescription.getPharmacyAddressNormalized();
+                if (prescriptionAddress == null || prescriptionAddress.isBlank()) {
+                    prescriptionAddress = AddressNormalizer.normalize(prescription.getPharmacyAddress());
+                    prescription.setPharmacyAddressNormalized(prescriptionAddress);
+                }
+
+                if (!pharmacyProfile.getAddressNormalized().equals(prescriptionAddress)) {
+                    throw new RuntimeException("This prescription is not assigned to your pharmacy.");
+                }
+
+                prescription.setStatus(Prescription.STATUS_FILLED);
+                prescription.setFilledAt(System.currentTimeMillis());
+                prescription.setFilledBy(pharmacyProfile.getPharmacyName());
+
+                firestore.collection(PRESCRIPTIONS_COLLECTION)
+                        .document(prescriptionId)
+                        .set(prescription)
+                        .get();
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to fill prescription: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    public CompletableFuture<Prescription> refillPrescription(String prescriptionId,
+                                                              String actorRole,
+                                                              String actorName,
+                                                              PharmacyProfile pharmacyProfile) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                if (prescriptionId == null || prescriptionId.isBlank()) {
+                    throw new RuntimeException("Prescription ID is required.");
+                }
+
+                DocumentSnapshot document = firestore.collection(PRESCRIPTIONS_COLLECTION)
+                        .document(prescriptionId)
+                        .get()
+                        .get();
+
+                if (!document.exists()) {
+                    throw new RuntimeException("Prescription not found.");
+                }
+
+                Prescription sourcePrescription = document.toObject(Prescription.class);
+                if (sourcePrescription == null) {
+                    throw new RuntimeException("Prescription could not be loaded.");
+                }
+                sourcePrescription.setPrescriptionId(document.getId());
+
+                Integer remainingRefills = PrescriptionRefillSupport.getRemainingRefills(sourcePrescription);
+                if (remainingRefills == null) {
+                    throw new RuntimeException("This prescription does not have a usable refill count.");
+                }
+                if (remainingRefills <= 0) {
+                    throw new RuntimeException("No refills are available for this prescription.");
+                }
+
+                if ("PHARMACY".equalsIgnoreCase(actorRole)) {
+                    if (pharmacyProfile == null || pharmacyProfile.getAddressNormalized() == null || pharmacyProfile.getAddressNormalized().isBlank()) {
+                        throw new RuntimeException("Pharmacy account is required.");
+                    }
+
+                    String prescriptionAddress = sourcePrescription.getPharmacyAddressNormalized();
+                    if (prescriptionAddress == null || prescriptionAddress.isBlank()) {
+                        prescriptionAddress = AddressNormalizer.normalize(sourcePrescription.getPharmacyAddress());
+                        sourcePrescription.setPharmacyAddressNormalized(prescriptionAddress);
+                    }
+
+                    if (!pharmacyProfile.getAddressNormalized().equals(prescriptionAddress)) {
+                        throw new RuntimeException("This prescription is not assigned to your pharmacy.");
+                    }
+                }
+
+                if ("PHARMACY".equalsIgnoreCase(actorRole)) {
+                    if (!Boolean.TRUE.equals(sourcePrescription.getRefillRequested())) {
+                        throw new RuntimeException("A doctor must send a refill request before the pharmacy can refill this prescription.");
+                    }
+
+                    int updatedRemainingRefills = remainingRefills - 1;
+                    sourcePrescription.setRemainingRefills(updatedRemainingRefills);
+                    sourcePrescription.setRefillDetails(PrescriptionRefillSupport.formatRemainingRefills(updatedRemainingRefills));
+                    sourcePrescription.setStatus(Prescription.STATUS_FILLED);
+                    sourcePrescription.setFilledAt(System.currentTimeMillis());
+                    sourcePrescription.setFilledBy(actorName != null && !actorName.isBlank() ? actorName : sourcePrescription.getPharmacyName());
+                    sourcePrescription.setRefillRequested(false);
+                    sourcePrescription.setRefillRequestedBy(null);
+                    sourcePrescription.setRefillRequestedAt(null);
+                } else {
+                    if (Boolean.TRUE.equals(sourcePrescription.getRefillRequested())) {
+                        throw new RuntimeException("A refill request has already been sent for this prescription.");
+                    }
+
+                    sourcePrescription.setStatus(Prescription.STATUS_REFILL_REQUESTED);
+                    sourcePrescription.setRefillRequested(true);
+                    sourcePrescription.setRefillRequestedBy(actorName);
+                    sourcePrescription.setRefillRequestedAt(System.currentTimeMillis());
+                }
+
+                firestore.collection(PRESCRIPTIONS_COLLECTION)
+                        .document(sourcePrescription.getPrescriptionId())
+                        .set(sourcePrescription)
+                        .get();
+
+                return sourcePrescription;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to refill prescription: " + e.getMessage(), e);
             }
         });
     }

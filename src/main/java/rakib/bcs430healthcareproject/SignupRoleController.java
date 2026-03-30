@@ -14,7 +14,6 @@ public class SignupRoleController {
         SceneRouter.go("doctor-signup-view.fxml", "Doctor Sign Up");
     }
 
-
     @FXML
     private void onBack() {
         SceneRouter.go("login-view.fxml", "Healthcare Project");

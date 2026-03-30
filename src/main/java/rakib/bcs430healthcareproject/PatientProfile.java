@@ -27,6 +27,10 @@ public class PatientProfile {
     // Insurance Information
     private String insuranceNumber;
     private String insuranceCompany;
+    private String preferredPharmacyUid;
+    private String preferredPharmacyName;
+    private String preferredPharmacyAddress;
+    private String preferredPharmacyPhoneNumber;
     
     // Medical Information
     private String allergies;
@@ -160,6 +164,38 @@ public class PatientProfile {
         this.insuranceCompany = insuranceCompany;
     }
 
+    public String getPreferredPharmacyUid() {
+        return preferredPharmacyUid;
+    }
+
+    public void setPreferredPharmacyUid(String preferredPharmacyUid) {
+        this.preferredPharmacyUid = preferredPharmacyUid;
+    }
+
+    public String getPreferredPharmacyName() {
+        return preferredPharmacyName;
+    }
+
+    public void setPreferredPharmacyName(String preferredPharmacyName) {
+        this.preferredPharmacyName = preferredPharmacyName;
+    }
+
+    public String getPreferredPharmacyAddress() {
+        return preferredPharmacyAddress;
+    }
+
+    public void setPreferredPharmacyAddress(String preferredPharmacyAddress) {
+        this.preferredPharmacyAddress = preferredPharmacyAddress;
+    }
+
+    public String getPreferredPharmacyPhoneNumber() {
+        return preferredPharmacyPhoneNumber;
+    }
+
+    public void setPreferredPharmacyPhoneNumber(String preferredPharmacyPhoneNumber) {
+        this.preferredPharmacyPhoneNumber = preferredPharmacyPhoneNumber;
+    }
+
     public String getAllergies() {
         return allergies;
     }
@@ -258,6 +294,10 @@ public class PatientProfile {
         result.put("gender", gender);
         result.put("insuranceNumber", insuranceNumber);
         result.put("insuranceCompany", insuranceCompany);
+        result.put("preferredPharmacyUid", preferredPharmacyUid);
+        result.put("preferredPharmacyName", preferredPharmacyName);
+        result.put("preferredPharmacyAddress", preferredPharmacyAddress);
+        result.put("preferredPharmacyPhoneNumber", preferredPharmacyPhoneNumber);
         result.put("allergies", allergies);
         result.put("currentMedications", currentMedications);
         result.put("chronicConditions", chronicConditions);

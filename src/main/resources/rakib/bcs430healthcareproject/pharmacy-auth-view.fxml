@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.web.WebView?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="rakib.bcs430healthcareproject.PharmacyAuthController"
+            styleClass="root">
+
+    <center>
+        <HBox spacing="20" style="-fx-padding: 24; -fx-alignment: center;">
+            <VBox styleClass="card" maxWidth="420" spacing="16">
+                <padding>
+                    <Insets top="26" right="26" bottom="26" left="26"/>
+                </padding>
+
+                <Label text="Pharmacy Portal" styleClass="title"/>
+                <Label text="Sign in to manage prescriptions for your claimed location, or create a new pharmacy account." styleClass="subtitle" wrapText="true"/>
+
+                <Button text="Pharmacy Sign In"
+                        onAction="#onSignIn"
+                        styleClass="primary-btn"
+                        maxWidth="1.7976931348623157E308"/>
+
+                <Button text="Pharmacy Sign Up"
+                        onAction="#onSignUp"
+                        styleClass="ghost-btn"
+                        maxWidth="1.7976931348623157E308"/>
+
+                <Button text="Back to Main Login"
+                        onAction="#onBack"
+                        styleClass="ghost-btn"
+                        maxWidth="1.7976931348623157E308"/>
+            </VBox>
+
+            <VBox styleClass="card" spacing="14" HBox.hgrow="ALWAYS" maxWidth="860">
+                <padding>
+                    <Insets top="22" right="22" bottom="22" left="22"/>
+                </padding>
+
+                <Label text="Find Registered Pharmacies" styleClass="title"/>
+                <Label text="Search by address to explore pharmacy locations before signing in or creating an account." styleClass="subtitle" wrapText="true"/>
+                <TextField fx:id="pharmacySearchField" promptText="Search pharmacy by address"/>
+                <Label fx:id="statusLabel" textFill="#0F766E"/>
+                <WebView fx:id="pharmacyMapWebView" prefHeight="420" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"/>
+            </VBox>
+        </HBox>
+    </center>
+
+</BorderPane>

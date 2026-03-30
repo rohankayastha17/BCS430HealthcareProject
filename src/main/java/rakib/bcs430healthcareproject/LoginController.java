@@ -59,7 +59,6 @@ public class LoginController {
                                 });
 
                     } else {
-
                         // Load doctor profile then route
                         firebaseService.getDoctorProfile(result.getUid())
                                 .thenAccept(doctorProfile -> Platform.runLater(() -> {
@@ -85,8 +84,8 @@ public class LoginController {
     }
 
     @FXML
-    private void onOpenPharmacyPortal() {
-        SceneRouter.go("pharmacy-prescriptions-view.fxml", "Pharmacy Portal");
+    private void onPharmacyPortal() {
+        SceneRouter.go("pharmacy-auth-view.fxml", "Pharmacy Portal");
     }
 
     private void showError(String msg) {

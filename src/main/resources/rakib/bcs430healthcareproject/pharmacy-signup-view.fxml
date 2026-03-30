@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="rakib.bcs430healthcareproject.PharmacySignupController"
+            styleClass="root">
+
+    <center>
+        <StackPane>
+            <ScrollPane fitToWidth="true" maxWidth="620" style="-fx-background-color: transparent;" pannable="true">
+                <content>
+                    <VBox styleClass="card" spacing="14" maxWidth="620">
+                        <padding>
+                            <Insets top="26" right="26" bottom="26" left="26"/>
+                        </padding>
+
+                        <Label text="Pharmacy Sign Up" styleClass="title"/>
+                        <Label text="Claim your pharmacy location so only authorized staff can view and fill prescriptions sent there." styleClass="subtitle" wrapText="true"/>
+
+                        <VBox spacing="8">
+                            <Label text="Pharmacy Name" styleClass="label"/>
+                            <TextField fx:id="pharmacyNameField" promptText="Community Pharmacy"/>
+                        </VBox>
+
+                        <VBox spacing="8">
+                            <Label text="Email" styleClass="label"/>
+                            <TextField fx:id="emailField" promptText="pharmacy@example.com"/>
+                        </VBox>
+
+                        <HBox spacing="12">
+                            <VBox spacing="8" HBox.hgrow="ALWAYS">
+                                <Label text="Password" styleClass="label"/>
+                                <PasswordField fx:id="passwordField" promptText="At least 6 characters"/>
+                            </VBox>
+                            <VBox spacing="8" HBox.hgrow="ALWAYS">
+                                <Label text="Confirm Password" styleClass="label"/>
+                                <PasswordField fx:id="confirmPasswordField" promptText="Re-enter password"/>
+                            </VBox>
+                        </HBox>
+
+                        <VBox spacing="8">
+                            <Label text="Phone Number" styleClass="label"/>
+                            <TextField fx:id="phoneField" promptText="(555) 123-4567"/>
+                        </VBox>
+
+                        <VBox spacing="8">
+                            <Label text="Street Address" styleClass="label"/>
+                            <TextField fx:id="addressField" promptText="123 Main St"/>
+                        </VBox>
+
+                        <HBox spacing="12">
+                            <VBox spacing="8" HBox.hgrow="ALWAYS">
+                                <Label text="City" styleClass="label"/>
+                                <TextField fx:id="cityField" promptText="Farmingdale"/>
+                            </VBox>
+                            <VBox spacing="8" prefWidth="90">
+                                <Label text="State" styleClass="label"/>
+                                <TextField fx:id="stateField" promptText="NY"/>
+                            </VBox>
+                            <VBox spacing="8" prefWidth="120">
+                                <Label text="ZIP" styleClass="label"/>
+                                <TextField fx:id="zipField" promptText="11735"/>
+                            </VBox>
+                        </HBox>
+
+                        <Label text="Use the same address doctors will send prescriptions to. That address becomes your claimed location." styleClass="muted" wrapText="true"/>
+
+                        <Label fx:id="errorLabel" text="" managed="false" visible="false" styleClass="error"/>
+
+                        <Button text="Create Pharmacy Account"
+                                onAction="#onCreatePharmacyAccount"
+                                styleClass="primary-btn"
+                                maxWidth="1.7976931348623157E308"/>
+
+                        <Button text="Back"
+                                onAction="#onBack"
+                                styleClass="ghost-btn"
+                                maxWidth="1.7976931348623157E308"/>
+                    </VBox>
+                </content>
+            </ScrollPane>
+        </StackPane>
+    </center>
+
+</BorderPane>

@@ -3,6 +3,7 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
@@ -21,13 +22,22 @@
             <Label text="Pharmacy Portal"
                    style="-fx-text-fill: white; -fx-font-size: 22; -fx-font-weight: bold;" />
             <Region HBox.hgrow="ALWAYS" />
+            <VBox spacing="2" style="-fx-alignment: center-right;">
+                <Label fx:id="pharmacyNameLabel"
+                       style="-fx-text-fill: white; -fx-font-size: 14; -fx-font-weight: bold;" />
+                <Label fx:id="pharmacyAddressLabel"
+                       style="-fx-text-fill: #CCFBF1; -fx-font-size: 12;" />
+            </VBox>
         </HBox>
     </top>
 
     <center>
         <VBox style="-fx-background-color: #F8FAFC; -fx-padding: 24; -fx-spacing: 16;">
-            <Label text="Review incoming prescriptions and mark them filled once they are ready."
+            <Label text="Review prescriptions routed to your claimed pharmacy address and mark them filled once they are ready."
                    style="-fx-text-fill: #334155; -fx-font-size: 14;" />
+            <TextField fx:id="patientSearchField"
+                       promptText="Search by patient name"
+                       style="-fx-background-radius: 10; -fx-padding: 10 12; -fx-font-size: 13;" />
             <Label fx:id="statusLabel"
                    style="-fx-text-fill: #0F766E; -fx-font-size: 12; -fx-font-weight: bold;" />
             <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;">
