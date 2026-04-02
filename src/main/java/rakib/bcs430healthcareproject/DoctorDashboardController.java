@@ -1,8 +1,10 @@
 package rakib.bcs430healthcareproject;
 
 import javafx.animation.KeyFrame;
+import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.util.Duration;
@@ -27,6 +29,7 @@ public class DoctorDashboardController {
     @FXML private Button patientsButton;
     @FXML private Button scheduleButton;
     @FXML private Button profileButton;
+    @FXML private Button notificationButton;
     @FXML private Button logoutButton;
 
     private Timeline clockTimeline;
@@ -34,6 +37,7 @@ public class DoctorDashboardController {
     @FXML
     public void initialize() {
         startClock();
+        setupNotificationBellAnimation();
 
         UserContext userContext = UserContext.getInstance();
 
@@ -43,7 +47,7 @@ public class DoctorDashboardController {
             System.out.println("Loading doctor dashboard for user: " + uid);
 
             // If you stored DoctorProfile in UserContext, use it:
-            DoctorProfile doctorProfile = userContext.getDoctorProfile(); // add this getter if missing
+            DoctorProfile doctorProfile = userContext.getDoctorProfile();
 
             if (doctorProfile != null) {
                 String displayName = doctorProfile.getName() != null ? doctorProfile.getName() : "Doctor";
@@ -80,6 +84,19 @@ public class DoctorDashboardController {
         currentDateTimeLabel.setText("Today: " + LocalDateTime.now().format(DATE_TIME_DISPLAY_FORMAT));
     }
 
+    private void setupNotificationBellAnimation() {
+        if (notificationButton != null) {
+            ScaleTransition pulse = new ScaleTransition(Duration.millis(800), notificationButton);
+            pulse.setFromX(1.0);
+            pulse.setFromY(1.0);
+            pulse.setToX(1.12);
+            pulse.setToY(1.12);
+            pulse.setCycleCount(2);
+            pulse.setAutoReverse(true);
+            pulse.play();
+        }
+    }
+
     @FXML
     private void onPatients() {
         System.out.println("Navigating to patients list...");
@@ -97,6 +114,21 @@ public class DoctorDashboardController {
     private void onProfile() {
         System.out.println("Navigating to doctor profile...");
         SceneRouter.go("doctor-profile-view.fxml", "Doctor Profile");
+    }
+
+    @FXML
+    private void onNotifications() {
+        System.out.println("Navigating to doctor notifications...");
+        try {
+            SceneRouter.go("doctor-notifications-view.fxml", "Notifications");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Navigation Error");
+            alert.setHeaderText("Unable to open Notifications");
+            alert.setContentText("An error occurred while loading doctor notifications. " + ex.getMessage());
+            alert.showAndWait();
+        }
     }
 
     @FXML

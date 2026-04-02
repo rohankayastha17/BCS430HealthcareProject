@@ -1,6 +1,7 @@
 package rakib.bcs430healthcareproject;
 
 import javafx.animation.KeyFrame;
+import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -28,8 +29,9 @@ public class PatientDashboardController {
     @FXML private Button appointmentsButton;
     @FXML private Button findDoctorButton;
     @FXML private Button prescriptionsButton;
-    @FXML private Button messageButton; // ✅ NEW
+    @FXML private Button messageButton;
     @FXML private Button profileButton;
+    @FXML private Button notificationButton;
     @FXML private Button logoutButton;
 
     private Timeline clockTimeline;
@@ -40,6 +42,7 @@ public class PatientDashboardController {
     @FXML
     public void initialize() {
         startClock();
+        setupNotificationBellAnimation();
 
         // Load current user data from session
         UserContext userContext = UserContext.getInstance();
@@ -84,6 +87,19 @@ public class PatientDashboardController {
         currentDateTimeLabel.setText("Today: " + LocalDateTime.now().format(DATE_TIME_DISPLAY_FORMAT));
     }
 
+    private void setupNotificationBellAnimation() {
+        if (notificationButton != null) {
+            ScaleTransition pulse = new ScaleTransition(Duration.millis(800), notificationButton);
+            pulse.setFromX(1.0);
+            pulse.setFromY(1.0);
+            pulse.setToX(1.12);
+            pulse.setToY(1.12);
+            pulse.setCycleCount(2);
+            pulse.setAutoReverse(true);
+            pulse.play();
+        }
+    }
+
     @FXML
     private void onAppointments() {
         System.out.println("Navigating to appointments...");
@@ -114,7 +130,7 @@ public class PatientDashboardController {
     }
 
     @FXML
-    private void onMessage() { // ✅ NEW METHOD
+    private void onMessage() {
         System.out.println("Navigating to messages...");
         SceneRouter.go("patient-message-view.fxml", "Messages");
     }
@@ -123,6 +139,21 @@ public class PatientDashboardController {
     private void onProfile() {
         System.out.println("Navigating to profile...");
         SceneRouter.go("patient-profile-view.fxml", "My Profile");
+    }
+
+    @FXML
+    private void onNotifications() {
+        System.out.println("Navigating to notifications...");
+        try {
+            SceneRouter.go("patient-notifications-view.fxml", "Notifications");
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Navigation Error");
+            alert.setHeaderText("Unable to open Notifications");
+            alert.setContentText("An error occurred while loading notifications. " + ex.getMessage());
+            alert.showAndWait();
+        }
     }
 
     @FXML
