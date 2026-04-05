@@ -4,11 +4,7 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextArea;
+import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
@@ -19,14 +15,17 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Controller for patient-to-doctor messaging.
+ * Messenger-style Patient Messaging Controller
  */
 public class PatientMessageController {
 
     @FXML private Label patientNameLabel;
+    @FXML private Label doctorHeaderLabel;
     @FXML private Label doctorInfoLabel;
     @FXML private Label statusLabel;
-    @FXML private ComboBox<Doctor> doctorComboBox;
+
+    @FXML private ListView<Doctor> doctorListView;
+
     @FXML private ScrollPane messagesScrollPane;
     @FXML private VBox messagesVBox;
     @FXML private TextArea messageInputArea;
@@ -50,261 +49,189 @@ public class PatientMessageController {
         }
 
         patientProfile = userContext.getProfile();
-        if (patientProfile == null) {
-            SceneRouter.go("patient-dashboard-view.fxml", "Patient Dashboard");
-            return;
-        }
+        patientNameLabel.setText(patientProfile.getName());
 
-        String patientName = patientProfile.getName() != null ? patientProfile.getName() : "Patient";
-        patientNameLabel.setText(patientName);
-
-        doctorComboBox.setCellFactory(listView -> new javafx.scene.control.ListCell<>() {
-            @Override
-            protected void updateItem(Doctor doctor, boolean empty) {
-                super.updateItem(doctor, empty);
-                if (empty || doctor == null) {
-                    setText(null);
-                } else {
-                    String specialty = doctor.getSpecialty() != null ? doctor.getSpecialty() : "Doctor";
-                    setText(doctor.getName() + " - " + specialty);
-                }
-            }
-        });
-
-        doctorComboBox.setButtonCell(new javafx.scene.control.ListCell<>() {
-            @Override
-            protected void updateItem(Doctor doctor, boolean empty) {
-                super.updateItem(doctor, empty);
-                if (empty || doctor == null) {
-                    setText("Choose a doctor conversation...");
-                } else {
-                    String specialty = doctor.getSpecialty() != null ? doctor.getSpecialty() : "Doctor";
-                    setText(doctor.getName() + " - " + specialty);
-                }
-            }
-        });
-
+        setupDoctorList();
         loadDoctors();
     }
 
-    private void loadDoctors() {
-        showStatus("Loading your doctors...", false);
+    // =========================================================
+    // LEFT PANEL (CONVERSATIONS)
+    // =========================================================
 
-        firebaseService.getDoctorsForPatient(patientProfile.getUid())
-                .thenAccept(doctors -> Platform.runLater(() -> renderDoctors(doctors)))
-                .exceptionally(e -> {
-                    Platform.runLater(() ->
-                            showStatus("Failed to load doctors: " + cleanErrorMessage(e), true)
-                    );
-                    return null;
-                });
+    private void setupDoctorList() {
+        doctorListView.setCellFactory(list -> new ListCell<>() {
+            @Override
+            protected void updateItem(Doctor doctor, boolean empty) {
+                super.updateItem(doctor, empty);
+
+                if (empty || doctor == null) {
+                    setText(null);
+                } else {
+                    setText(doctor.getName() + " • " + fallback(doctor.getSpecialty()));
+                }
+            }
+        });
+
+        doctorListView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            selectedDoctor = newVal;
+            updateDoctorHeader();
+            loadMessages();
+        });
     }
 
-    private void renderDoctors(List<Doctor> doctors) {
-        doctorComboBox.getItems().clear();
+    private void loadDoctors() {
+        firebaseService.getDoctorsForPatient(patientProfile.getUid())
+                .thenAccept(doctors -> Platform.runLater(() -> {
+                    doctorListView.getItems().setAll(doctors);
 
-        if (doctors == null) {
-            doctors = new ArrayList<>();
-        }
+                    if (!doctors.isEmpty()) {
+                        doctorListView.getSelectionModel().selectFirst();
+                    }
+                }));
+    }
 
-        if (doctors.isEmpty()) {
-            doctorInfoLabel.setText("No doctors found. Book an appointment first to start messaging.");
-            showStatus("No doctor conversations available.", false);
+    // =========================================================
+    // HEADER
+    // =========================================================
+
+    private void updateDoctorHeader() {
+        if (selectedDoctor == null) {
+            doctorHeaderLabel.setText("Select a doctor");
+            doctorInfoLabel.setText("");
             return;
         }
 
-        doctorComboBox.getItems().addAll(doctors);
-        doctorComboBox.getSelectionModel().selectFirst();
-        selectedDoctor = doctorComboBox.getSelectionModel().getSelectedItem();
-        updateDoctorInfo();
-        loadMessages();
+        doctorHeaderLabel.setText(selectedDoctor.getName());
 
-        showStatus("Loaded " + doctors.size() + " doctor conversation(s).", false);
+        doctorInfoLabel.setText(
+                "Specialty: " + fallback(selectedDoctor.getSpecialty()) +
+                        " | Clinic: " + fallback(selectedDoctor.getClinicName())
+        );
     }
 
-    @FXML
-    private void onDoctorSelected() {
-        selectedDoctor = doctorComboBox.getSelectionModel().getSelectedItem();
-        updateDoctorInfo();
-        loadMessages();
-    }
+    // =========================================================
+    // SEND MESSAGE
+    // =========================================================
 
     @FXML
     private void onSendMessage() {
-        if (selectedDoctor == null) {
-            showStatus("Please select a doctor first.", true);
-            return;
-        }
+        if (selectedDoctor == null) return;
 
-        String text = safeTrim(messageInputArea.getText());
-        if (text.isBlank()) {
-            showStatus("Please enter a message before sending.", true);
-            return;
-        }
+        String text = messageInputArea.getText().trim();
+        if (text.isEmpty()) return;
 
-        Message message = new Message();
-        message.setDoctorUid(selectedDoctor.getUid());
-        message.setDoctorName(selectedDoctor.getName());
-        message.setPatientUid(patientProfile.getUid());
-        message.setPatientName(patientProfile.getName());
-        message.setSenderUid(patientProfile.getUid());
-        message.setSenderName(patientProfile.getName());
-        message.setSenderRole("PATIENT");
-        message.setMessageText(text);
-        message.setCreatedAt(System.currentTimeMillis());
+        Message msg = new Message();
+        msg.setDoctorUid(selectedDoctor.getUid());
+        msg.setDoctorName(selectedDoctor.getName());
+        msg.setPatientUid(patientProfile.getUid());
+        msg.setPatientName(patientProfile.getName());
+        msg.setSenderUid(patientProfile.getUid());
+        msg.setSenderName(patientProfile.getName());
+        msg.setSenderRole("PATIENT");
+        msg.setMessageText(text);
+        msg.setCreatedAt(System.currentTimeMillis());
+        msg.setRead(false);
 
-        sendButton.setDisable(true);
-        showStatus("Sending message...", false);
-
-        firebaseService.saveMessage(message)
-                .thenAccept(messageId -> Platform.runLater(() -> {
+        firebaseService.saveMessage(msg)
+                .thenRun(() -> Platform.runLater(() -> {
                     messageInputArea.clear();
-                    sendButton.setDisable(false);
-                    showStatus("Message sent successfully.", false);
                     loadMessages();
-                }))
-                .exceptionally(e -> {
-                    Platform.runLater(() -> {
-                        sendButton.setDisable(false);
-                        showStatus("Failed to send message: " + cleanErrorMessage(e), true);
-                    });
-                    return null;
-                });
+                }));
     }
 
-    @FXML
-    private void onClear() {
-        messageInputArea.clear();
-        showStatus("Message cleared.", false);
-    }
-
-    @FXML
-    private void onBack() {
-        SceneRouter.go("patient-dashboard-view.fxml", "Patient Dashboard");
-    }
-
-    private void updateDoctorInfo() {
-        if (selectedDoctor == null) {
-            doctorInfoLabel.setText("No doctor selected.");
-            return;
-        }
-
-        String specialty = fallback(selectedDoctor.getSpecialty());
-        String clinic = fallback(selectedDoctor.getClinicName());
-        doctorInfoLabel.setText("Specialty: " + specialty + "   |   Clinic: " + clinic);
-    }
+    // =========================================================
+    // LOAD MESSAGES
+    // =========================================================
 
     private void loadMessages() {
-        messagesVBox.getChildren().clear();
-
-        if (selectedDoctor == null) {
-            showStatus("Please select a doctor conversation.", false);
-            return;
-        }
-
-        showStatus("Loading conversation...", false);
+        if (selectedDoctor == null) return;
 
         firebaseService.getMessagesBetweenDoctorAndPatient(
                         selectedDoctor.getUid(),
                         patientProfile.getUid()
                 )
-                .thenAccept(messages -> Platform.runLater(() -> renderMessages(messages)))
-                .exceptionally(e -> {
-                    Platform.runLater(() ->
-                            showStatus("Failed to load messages: " + cleanErrorMessage(e), true)
-                    );
-                    return null;
-                });
+                .thenAccept(messages -> Platform.runLater(() -> {
+                    renderMessages(messages);
+                    markAsRead();
+                }));
     }
+
+    private void markAsRead() {
+        firebaseService.markMessagesAsRead(
+                selectedDoctor.getUid(),
+                patientProfile.getUid(),
+                "PATIENT"
+        );
+    }
+
+    // =========================================================
+    // RENDER CHAT
+    // =========================================================
 
     private void renderMessages(List<Message> messages) {
         messagesVBox.getChildren().clear();
 
-        if (messages == null) {
-            messages = new ArrayList<>();
-        }
+        if (messages == null) messages = new ArrayList<>();
 
         messages.sort(Comparator.comparingLong(m ->
-                m.getCreatedAt() != null ? m.getCreatedAt() : 0L
+                m.getCreatedAt() != null ? m.getCreatedAt() : 0
         ));
 
-        if (messages.isEmpty()) {
-            Label emptyLabel = new Label("No messages yet. Start the conversation below.");
-            emptyLabel.setStyle("-fx-text-fill: #64748B; -fx-font-size: 13;");
-            messagesVBox.getChildren().add(emptyLabel);
-            showStatus("No messages found.", false);
-            return;
+        for (Message msg : messages) {
+            messagesVBox.getChildren().add(createBubble(msg));
         }
 
-        for (Message message : messages) {
-            messagesVBox.getChildren().add(createMessageBubble(message));
-        }
-
-        showStatus("Loaded " + messages.size() + " message(s).", false);
         Platform.runLater(() -> messagesScrollPane.setVvalue(1.0));
     }
 
-    private VBox createMessageBubble(Message message) {
-        boolean isPatientMessage = patientProfile.getUid() != null
-                && patientProfile.getUid().equals(message.getSenderUid());
+    private VBox createBubble(Message msg) {
+        boolean isMe = msg.getSenderUid().equals(patientProfile.getUid());
 
-        VBox wrapper = new VBox(4);
-
+        VBox wrapper = new VBox();
         HBox row = new HBox();
-        row.setAlignment(isPatientMessage ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
+        row.setAlignment(isMe ? Pos.CENTER_RIGHT : Pos.CENTER_LEFT);
 
-        VBox bubble = new VBox(6);
-        bubble.setMaxWidth(420);
-        bubble.setPadding(new Insets(12));
-        bubble.setStyle(isPatientMessage
-                ? "-fx-background-color: #DBEAFE; -fx-background-radius: 14;"
-                : "-fx-background-color: white; -fx-border-color: #D1D5DB; -fx-border-radius: 14; -fx-background-radius: 14;");
+        VBox bubble = new VBox(5);
+        bubble.setPadding(new Insets(10));
+        bubble.setMaxWidth(400);
 
-        Label senderLabel = new Label(isPatientMessage ? "You" : fallback(message.getSenderName()));
-        senderLabel.setStyle("-fx-text-fill: #0F172A; -fx-font-size: 12; -fx-font-weight: bold;");
+        bubble.setStyle(isMe
+                ? "-fx-background-color: #DBEAFE; -fx-background-radius: 12;"
+                : "-fx-background-color: white; -fx-border-color: #E5E7EB; -fx-background-radius: 12;");
 
-        Label textLabel = new Label(fallback(message.getMessageText()));
-        textLabel.setWrapText(true);
-        textLabel.setStyle("-fx-text-fill: #0F172A; -fx-font-size: 13;");
+        Label text = new Label(msg.getMessageText());
+        text.setWrapText(true);
 
-        Label timeLabel = new Label(formatTime(message.getCreatedAt()));
-        timeLabel.setStyle("-fx-text-fill: #64748B; -fx-font-size: 11;");
+        Label time = new Label(formatTime(msg.getCreatedAt()));
+        time.setStyle("-fx-font-size: 10; -fx-text-fill: gray;");
 
-        bubble.getChildren().addAll(senderLabel, textLabel, timeLabel);
+        bubble.getChildren().addAll(text, time);
         row.getChildren().add(bubble);
         wrapper.getChildren().add(row);
 
         return wrapper;
     }
 
-    private String formatTime(Long millis) {
-        if (millis == null) {
-            return "";
-        }
-        return timeFormat.format(new Date(millis));
+    private String formatTime(Long t) {
+        return t == null ? "" : timeFormat.format(new Date(t));
     }
 
-    private void showStatus(String message, boolean isError) {
-        statusLabel.setText(message);
-        statusLabel.setStyle(isError
-                ? "-fx-text-fill: #DC2626; -fx-font-size: 12; -fx-font-weight: bold;"
-                : "-fx-text-fill: #0F766E; -fx-font-size: 12; -fx-font-weight: bold;");
+    // =========================================================
+    // UTIL
+    // =========================================================
+
+    private String fallback(String v) {
+        return v == null ? "" : v;
     }
 
-    private String safeTrim(String value) {
-        return value == null ? "" : value.trim();
+    @FXML
+    private void onClear() {
+        messageInputArea.clear();
     }
 
-    private String fallback(String value) {
-        return value == null || value.isBlank() ? "Not provided" : value;
-    }
-
-    private String cleanErrorMessage(Throwable throwable) {
-        if (throwable == null) {
-            return "Unknown error";
-        }
-
-        Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
-        return cause.getMessage() != null ? cause.getMessage() : "Unknown error";
+    @FXML
+    private void onBack() {
+        SceneRouter.go("patient-dashboard-view.fxml", "Patient Dashboard");
     }
 }

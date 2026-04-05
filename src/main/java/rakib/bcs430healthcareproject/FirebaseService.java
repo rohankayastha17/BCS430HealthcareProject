@@ -922,6 +922,7 @@ public class FirebaseService {
             }
         });
     }
+
     /**
      * Retrieves unique doctors a patient has appointments with.
      */
@@ -972,6 +973,7 @@ public class FirebaseService {
             }
         });
     }
+
     /**
      * Saves a prescription record.
      */
@@ -1074,6 +1076,10 @@ public class FirebaseService {
                     message.setCreatedAt(System.currentTimeMillis());
                 }
 
+                if (message.getRead() == null) {
+                    message.setRead(false);
+                }
+
                 firestore.collection(MESSAGES_COLLECTION)
                         .document(messageId)
                         .set(message)
@@ -1116,6 +1122,95 @@ public class FirebaseService {
                 return messages;
             } catch (Exception e) {
                 throw new RuntimeException("Failed to retrieve messages: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Checks whether the current user has any unread messages.
+     */
+    public CompletableFuture<Boolean> hasUnreadMessages(String currentUid, String role) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                QuerySnapshot snapshot = firestore.collection(MESSAGES_COLLECTION)
+                        .get()
+                        .get();
+
+                for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                    Message msg = doc.toObject(Message.class);
+                    if (msg == null) {
+                        continue;
+                    }
+
+                    boolean unread = msg.getRead() == null || !msg.getRead();
+                    if (!unread) {
+                        continue;
+                    }
+
+                    if ("PATIENT".equalsIgnoreCase(role)) {
+                        if (currentUid.equals(msg.getPatientUid())
+                                && msg.getSenderRole() != null
+                                && !"PATIENT".equalsIgnoreCase(msg.getSenderRole())) {
+                            return true;
+                        }
+                    } else if ("DOCTOR".equalsIgnoreCase(role)) {
+                        if (currentUid.equals(msg.getDoctorUid())
+                                && msg.getSenderRole() != null
+                                && !"DOCTOR".equalsIgnoreCase(msg.getSenderRole())) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to check unread messages: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Marks incoming messages as read for the current viewer.
+     */
+    public CompletableFuture<Void> markMessagesAsRead(String doctorUid, String patientUid, String viewerRole) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                QuerySnapshot snapshot = firestore.collection(MESSAGES_COLLECTION)
+                        .whereEqualTo("doctorUid", doctorUid)
+                        .whereEqualTo("patientUid", patientUid)
+                        .get()
+                        .get();
+
+                for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                    Message message = doc.toObject(Message.class);
+                    if (message == null) {
+                        continue;
+                    }
+
+                    boolean unread = message.getRead() == null || !message.getRead();
+                    if (!unread) {
+                        continue;
+                    }
+
+                    String senderRole = message.getSenderRole();
+                    if (senderRole == null) {
+                        continue;
+                    }
+
+                    boolean shouldMarkRead = false;
+
+                    if ("PATIENT".equalsIgnoreCase(viewerRole) && !"PATIENT".equalsIgnoreCase(senderRole)) {
+                        shouldMarkRead = true;
+                    } else if ("DOCTOR".equalsIgnoreCase(viewerRole) && !"DOCTOR".equalsIgnoreCase(senderRole)) {
+                        shouldMarkRead = true;
+                    }
+
+                    if (shouldMarkRead) {
+                        doc.getReference().update("read", true).get();
+                    }
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to mark messages as read: " + e.getMessage(), e);
             }
         });
     }

@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx/21"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="rakib.bcs430healthcareproject.DoctorPatientHistoryController"
+            stylesheets="@app.css"
+            style="-fx-background-color: #f8fafc;">
+
+    <top>
+        <VBox spacing="0">
+            <HBox style="-fx-background-color: #0F766E; -fx-padding: 18 24; -fx-alignment: center-left; -fx-spacing: 15;">
+                <Label text="HealthConnect"
+                       style="-fx-text-fill: white; -fx-font-size: 22; -fx-font-weight: bold;" />
+
+                <Region HBox.hgrow="ALWAYS" />
+
+                <Button text="Back"
+                        onAction="#handleBack"
+                        style="-fx-background-color: white; -fx-text-fill: #0F766E; -fx-font-weight: bold; -fx-background-radius: 8;" />
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;">
+            <content>
+                <VBox spacing="18" style="-fx-padding: 24;">
+                    <padding>
+                        <Insets top="24" right="24" bottom="24" left="24"/>
+                    </padding>
+
+                    <!-- Header -->
+                    <VBox spacing="8"
+                          style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #dbeafe;">
+                        <Label text="Patient Information"
+                               style="-fx-font-size: 24; -fx-font-weight: bold; -fx-text-fill: #0F172A;" />
+                        <Label fx:id="patientNameLabel"
+                               style="-fx-font-size: 22; -fx-font-weight: bold; -fx-text-fill: #0F766E;" />
+                    </VBox>
+
+                    <!-- Overview -->
+                    <VBox spacing="14"
+                          style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #dbeafe;">
+                        <Label text="Overview"
+                               style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #0F172A;" />
+
+                        <HBox spacing="30">
+                            <VBox spacing="4">
+                                <Label text="Age" style="-fx-text-fill: #64748B; -fx-font-size: 12; -fx-font-weight: bold;" />
+                                <Label fx:id="overviewAgeLabel" style="-fx-font-size: 15; -fx-font-weight: bold;" />
+                            </VBox>
+                            <VBox spacing="4">
+                                <Label text="Gender" style="-fx-text-fill: #64748B; -fx-font-size: 12; -fx-font-weight: bold;" />
+                                <Label fx:id="overviewGenderLabel" style="-fx-font-size: 15; -fx-font-weight: bold;" />
+                            </VBox>
+                            <VBox spacing="4">
+                                <Label text="Date of Birth" style="-fx-text-fill: #64748B; -fx-font-size: 12; -fx-font-weight: bold;" />
+                                <Label fx:id="overviewDobLabel" style="-fx-font-size: 15; -fx-font-weight: bold;" />
+                            </VBox>
+                        </HBox>
+                    </VBox>
+
+                    <!-- Personal Information -->
+                    <VBox spacing="12"
+                          style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #dbeafe;">
+                        <Label text="Personal Information"
+                               style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #0F172A;" />
+
+                        <GridPane hgap="20" vgap="12">
+                            <Label text="Full Name:" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="fullNameLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+
+                            <Label text="Age:" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="ageLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+
+                            <Label text="Gender:" GridPane.rowIndex="2" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="genderLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+
+                            <Label text="Date of Birth:" GridPane.rowIndex="3" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="dobLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" />
+                        </GridPane>
+                    </VBox>
+
+                    <!-- Contact Information -->
+                    <VBox spacing="12"
+                          style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #dbeafe;">
+                        <Label text="Contact Information"
+                               style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #0F172A;" />
+
+                        <GridPane hgap="20" vgap="12">
+                            <Label text="Email:" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="emailLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+
+                            <Label text="Phone:" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="phoneLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+
+                            <Label text="ZIP Code:" GridPane.rowIndex="2" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="zipLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+                        </GridPane>
+                    </VBox>
+
+                    <!-- Insurance Information -->
+                    <VBox spacing="12"
+                          style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #dbeafe;">
+                        <Label text="Insurance Information"
+                               style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #0F172A;" />
+
+                        <GridPane hgap="20" vgap="12">
+                            <Label text="Insurance Company:" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="insuranceCompanyLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+
+                            <Label text="Insurance Number:" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="insuranceNumberLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+
+                            <Label text="Preferred Pharmacy:" GridPane.rowIndex="2" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="preferredPharmacyLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+
+                            <Label text="Pharmacy Address:" GridPane.rowIndex="3" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="preferredPharmacyAddressLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" wrapText="true" />
+
+                            <Label text="Pharmacy Phone:" GridPane.rowIndex="4" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="preferredPharmacyPhoneLabel" GridPane.rowIndex="4" GridPane.columnIndex="1" />
+                        </GridPane>
+                    </VBox>
+
+                    <!-- Medical Information -->
+                    <VBox spacing="12"
+                          style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #dbeafe;">
+                        <Label text="Medical Information"
+                               style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #0F172A;" />
+
+                        <GridPane hgap="20" vgap="12">
+                            <Label text="Blood Type:" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="bloodTypeLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+
+                            <Label text="Vaccination Status:" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="vaccinationStatusLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+
+                            <Label text="Height:" GridPane.rowIndex="2" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="heightLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+
+                            <Label text="Weight:" GridPane.rowIndex="3" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="weightLabel" GridPane.rowIndex="3" GridPane.columnIndex="1" />
+                        </GridPane>
+
+                        <Separator />
+
+                        <Label text="Allergies" style="-fx-font-size: 14; -fx-font-weight: bold;" />
+                        <TextArea fx:id="allergiesArea" prefRowCount="3" />
+
+                        <Label text="Current Medications" style="-fx-font-size: 14; -fx-font-weight: bold;" />
+                        <TextArea fx:id="medicationsArea" prefRowCount="3" />
+
+                        <Label text="Chronic Conditions" style="-fx-font-size: 14; -fx-font-weight: bold;" />
+                        <TextArea fx:id="chronicConditionsArea" prefRowCount="3" />
+
+                        <Label text="Medical History" style="-fx-font-size: 14; -fx-font-weight: bold;" />
+                        <TextArea fx:id="medicalHistoryArea" prefRowCount="5" />
+                    </VBox>
+
+                    <!-- Emergency Contact -->
+                    <VBox spacing="12"
+                          style="-fx-background-color: white; -fx-padding: 20; -fx-background-radius: 16; -fx-border-radius: 16; -fx-border-color: #dbeafe;">
+                        <Label text="Emergency Contact"
+                               style="-fx-font-size: 18; -fx-font-weight: bold; -fx-text-fill: #0F172A;" />
+
+                        <GridPane hgap="20" vgap="12">
+                            <Label text="Name:" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="emergencyContactNameLabel" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+
+                            <Label text="Relationship:" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="emergencyContactRelationshipLabel" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+
+                            <Label text="Phone:" GridPane.rowIndex="2" GridPane.columnIndex="0" style="-fx-font-weight: bold;" />
+                            <Label fx:id="emergencyContactPhoneLabel" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+                        </GridPane>
+                    </VBox>
+
+                    <Label fx:id="statusLabel"
+                           style="-fx-text-fill: #475569; -fx-font-size: 13;" />
+                </VBox>
+            </content>
+        </ScrollPane>
+    </center>
+</BorderPane>

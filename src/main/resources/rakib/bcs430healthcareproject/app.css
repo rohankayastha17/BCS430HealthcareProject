@@ -247,3 +247,65 @@
 .clean-scroll > .viewport {
     -fx-background-color: transparent;
 }
+
+/* =========================================================
+   FLOATING MESSAGE BUTTON
+   ========================================================= */
+
+.fab-message {
+    -fx-background-color: linear-gradient(to bottom right, #14b8a6, #0f766e);
+    -fx-text-fill: white;
+    -fx-font-size: 22px;
+    -fx-font-weight: 900;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-min-width: 58px;
+    -fx-min-height: 58px;
+    -fx-max-width: 58px;
+    -fx-max-height: 58px;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+    -fx-effect: dropshadow(gaussian, rgba(15, 118, 110, 0.35), 18, 0.22, 0, 6);
+}
+
+.fab-message:hover {
+    -fx-background-color: linear-gradient(to bottom right, #2dd4bf, #0f766e);
+    -fx-effect: dropshadow(gaussian, rgba(20, 184, 166, 0.45), 22, 0.24, 0, 8);
+}
+
+.fab-message:pressed {
+    -fx-scale-x: 0.97;
+    -fx-scale-y: 0.97;
+}
+
+/* =========================================================
+   FLOATING MESSAGE BUTTON - UNREAD STATE
+   ========================================================= */
+
+.fab-message-unread {
+    -fx-background-color: linear-gradient(to bottom right, #14b8a6, #0f766e);
+    -fx-text-fill: white;
+    -fx-font-size: 22px;
+    -fx-font-weight: 900;
+    -fx-background-radius: 999;
+    -fx-border-radius: 999;
+    -fx-min-width: 58px;
+    -fx-min-height: 58px;
+    -fx-max-width: 58px;
+    -fx-max-height: 58px;
+    -fx-cursor: hand;
+    -fx-padding: 0;
+    -fx-border-color: #ef4444;
+    -fx-border-width: 3;
+    -fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.55), 22, 0.24, 0, 0);
+}
+
+.fab-message-unread:hover {
+    -fx-background-color: linear-gradient(to bottom right, #2dd4bf, #0f766e);
+    -fx-effect: dropshadow(gaussian, rgba(239, 68, 68, 0.65), 24, 0.28, 0, 0);
+}
+
+.fab-message-unread:pressed {
+    -fx-scale-x: 0.97;
+    -fx-scale-y: 0.97;
+}

@@ -1,6 +1,7 @@
 package rakib.bcs430healthcareproject;
 
 import javafx.animation.KeyFrame;
+import javafx.animation.ScaleTransition;
 import javafx.animation.Timeline;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -13,7 +14,6 @@ import java.time.format.DateTimeFormatter;
 
 /**
  * Controller for the Patient Dashboard.
- * Displays patient information and provides navigation to other features.
  */
 public class PatientDashboardController {
 
@@ -28,43 +28,71 @@ public class PatientDashboardController {
     @FXML private Button appointmentsButton;
     @FXML private Button findDoctorButton;
     @FXML private Button prescriptionsButton;
-    @FXML private Button messageButton; // ✅ NEW
     @FXML private Button profileButton;
+    @FXML private Button notificationButton;
     @FXML private Button logoutButton;
 
-    private Timeline clockTimeline;
+    @FXML private Button messageFabButton;
 
-    /**
-     * Initialize the controller.
-     */
+    private Timeline clockTimeline;
+    private Timeline unreadCheckTimeline;
+
+    private FirebaseService firebaseService;
+    private UserContext userContext;
+
     @FXML
     public void initialize() {
-        startClock();
+        firebaseService = new FirebaseService();
+        userContext = UserContext.getInstance();
 
-        // Load current user data from session
-        UserContext userContext = UserContext.getInstance();
+        startClock();
+        setupNotificationBellAnimation();
+        startUnreadMessageChecker();
 
         if (userContext.isLoggedIn()) {
             PatientProfile profile = userContext.getProfile();
             String uid = userContext.getUid();
-
-            System.out.println("Loading dashboard for user: " + uid);
 
             if (profile != null) {
                 String displayName = profile.getName() != null ? profile.getName() : "Patient";
                 welcomeLabel.setText("Welcome Back, " + displayName);
                 patientNameLabel.setText("Patient Name: " + displayName);
                 patientEmailLabel.setText("Email: " + profile.getEmail());
-            } else {
-                welcomeLabel.setText("Welcome to Your Patient Dashboard");
-                patientNameLabel.setText("Patient Name: [Not loaded]");
-                patientEmailLabel.setText("Email: [Not loaded]");
             }
-        } else {
-            welcomeLabel.setText("Welcome to Your Patient Dashboard");
-            patientNameLabel.setText("Patient Name: [Not loaded]");
-            patientEmailLabel.setText("Email: [Not loaded]");
         }
+    }
+
+    private void startUnreadMessageChecker() {
+        unreadCheckTimeline = new Timeline(
+                new KeyFrame(Duration.seconds(5), e -> checkUnreadMessages())
+        );
+        unreadCheckTimeline.setCycleCount(Timeline.INDEFINITE);
+        unreadCheckTimeline.play();
+    }
+
+    private void checkUnreadMessages() {
+        String uid = userContext.getUid();
+
+        firebaseService.hasUnreadMessages(uid, "PATIENT")
+                .thenAccept(hasUnread -> {
+                    javafx.application.Platform.runLater(() -> {
+                        if (hasUnread) {
+                            messageFabButton.getStyleClass().remove("fab-message");
+                            if (!messageFabButton.getStyleClass().contains("fab-message-unread")) {
+                                messageFabButton.getStyleClass().add("fab-message-unread");
+                            }
+                        } else {
+                            messageFabButton.getStyleClass().remove("fab-message-unread");
+                            if (!messageFabButton.getStyleClass().contains("fab-message")) {
+                                messageFabButton.getStyleClass().add("fab-message");
+                            }
+                        }
+                    });
+                })
+                .exceptionally(ex -> {
+                    ex.printStackTrace();
+                    return null;
+                });
     }
 
     private void startClock() {
@@ -72,63 +100,58 @@ public class PatientDashboardController {
         clockTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> updateClockLabel()));
         clockTimeline.setCycleCount(Timeline.INDEFINITE);
         clockTimeline.play();
-
-        currentDateTimeLabel.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene == null && clockTimeline != null) {
-                clockTimeline.stop();
-            }
-        });
     }
 
     private void updateClockLabel() {
         currentDateTimeLabel.setText("Today: " + LocalDateTime.now().format(DATE_TIME_DISPLAY_FORMAT));
     }
 
+    private void setupNotificationBellAnimation() {
+        if (notificationButton != null) {
+            ScaleTransition pulse = new ScaleTransition(Duration.millis(800), notificationButton);
+            pulse.setFromX(1.0);
+            pulse.setFromY(1.0);
+            pulse.setToX(1.12);
+            pulse.setToY(1.12);
+            pulse.setCycleCount(2);
+            pulse.setAutoReverse(true);
+            pulse.play();
+        }
+    }
+
+    @FXML
+    private void handleOpenMessages() {
+        SceneRouter.go("patient-message-view.fxml", "Messages");
+    }
+
+
     @FXML
     private void onAppointments() {
-        System.out.println("Navigating to appointments...");
         SceneRouter.go("patient-appointments-view.fxml", "My Appointments");
     }
 
     @FXML
     private void onPrescriptions() {
-        System.out.println("Navigating to prescriptions...");
         SceneRouter.go("patient-prescriptions-view.fxml", "My Prescriptions");
     }
 
     @FXML
     private void onFindDoctor() {
-        System.out.println("Navigating to find doctor...");
-        java.net.URL res = SceneRouter.class.getResource("doctor-search-view.fxml");
-        System.out.println("doctor-search-view.fxml resource: " + res);
-        try {
-            SceneRouter.go("doctor-search-view.fxml", "Find a Doctor");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Navigation Error");
-            alert.setHeaderText("Unable to open Find a Doctor");
-            alert.setContentText("An error occurred while loading the doctor search. " + ex.getMessage());
-            alert.showAndWait();
-        }
-    }
-
-    @FXML
-    private void onMessage() { // ✅ NEW METHOD
-        System.out.println("Navigating to messages...");
-        SceneRouter.go("patient-message-view.fxml", "Messages");
+        SceneRouter.go("doctor-search-view.fxml", "Find a Doctor");
     }
 
     @FXML
     private void onProfile() {
-        System.out.println("Navigating to profile...");
         SceneRouter.go("patient-profile-view.fxml", "My Profile");
     }
 
     @FXML
+    private void onNotifications() {
+        SceneRouter.go("patient-notifications-view.fxml", "Notifications");
+    }
+
+    @FXML
     private void onLogout() {
-        System.out.println("Logging out...");
-        UserContext userContext = UserContext.getInstance();
         userContext.clearUserData();
         SceneRouter.go("login-view.fxml", "Login");
     }

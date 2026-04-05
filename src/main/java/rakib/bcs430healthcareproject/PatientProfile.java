@@ -18,12 +18,12 @@ public class PatientProfile {
     private String role;
     private String passwordHash;
     private String passwordSalt;
-    
+
     // Personal Information
     private String dateOfBirth;
     private Integer age;
     private String gender;
-    
+
     // Insurance Information
     private String insuranceNumber;
     private String insuranceCompany;
@@ -31,7 +31,7 @@ public class PatientProfile {
     private String preferredPharmacyName;
     private String preferredPharmacyAddress;
     private String preferredPharmacyPhoneNumber;
-    
+
     // Medical Information
     private String allergies;
     private String currentMedications;
@@ -41,7 +41,12 @@ public class PatientProfile {
     private String medicalHistory;
     private String height;  // e.g., "5'10\"" or "178 cm"
     private Double weight;  // in lbs or kg
-    
+
+    // Emergency Contact
+    private String emergencyContactName;
+    private String emergencyContactRelationship;
+    private String emergencyContactPhone;
+
     private Long createdAt;
     private Long updatedAt;
 
@@ -60,221 +65,96 @@ public class PatientProfile {
     }
 
     // Getters and Setters
-    public String getUid() {
-        return uid;
-    }
+    public String getUid() { return uid; }
+    public void setUid(String uid) { this.uid = uid; }
 
-    public void setUid(String uid) {
-        this.uid = uid;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 
-    public String getEmail() {
-        return email;
-    }
+    public String getZip() { return zip; }
+    public void setZip(String zip) { this.zip = zip; }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
+    public String getPasswordSalt() { return passwordSalt; }
+    public void setPasswordSalt(String passwordSalt) { this.passwordSalt = passwordSalt; }
 
-    public String getZip() {
-        return zip;
-    }
+    public String getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(String dateOfBirth) { this.dateOfBirth = dateOfBirth; }
 
-    public void setZip(String zip) {
-        this.zip = zip;
-    }
+    public Integer getAge() { return age; }
+    public void setAge(Integer age) { this.age = age; }
 
-    public String getRole() {
-        return role;
-    }
+    public String getGender() { return gender; }
+    public void setGender(String gender) { this.gender = gender; }
 
-    public void setRole(String role) {
-        this.role = role;
-    }
+    public String getInsuranceNumber() { return insuranceNumber; }
+    public void setInsuranceNumber(String insuranceNumber) { this.insuranceNumber = insuranceNumber; }
 
-    public String getPasswordHash() {
-        return passwordHash;
-    }
+    public String getInsuranceCompany() { return insuranceCompany; }
+    public void setInsuranceCompany(String insuranceCompany) { this.insuranceCompany = insuranceCompany; }
 
-    public void setPasswordHash(String passwordHash) {
-        this.passwordHash = passwordHash;
-    }
+    public String getPreferredPharmacyUid() { return preferredPharmacyUid; }
+    public void setPreferredPharmacyUid(String preferredPharmacyUid) { this.preferredPharmacyUid = preferredPharmacyUid; }
 
-    public String getPasswordSalt() {
-        return passwordSalt;
-    }
+    public String getPreferredPharmacyName() { return preferredPharmacyName; }
+    public void setPreferredPharmacyName(String preferredPharmacyName) { this.preferredPharmacyName = preferredPharmacyName; }
 
-    public void setPasswordSalt(String passwordSalt) {
-        this.passwordSalt = passwordSalt;
-    }
+    public String getPreferredPharmacyAddress() { return preferredPharmacyAddress; }
+    public void setPreferredPharmacyAddress(String preferredPharmacyAddress) { this.preferredPharmacyAddress = preferredPharmacyAddress; }
 
-    public String getDateOfBirth() {
-        return dateOfBirth;
-    }
+    public String getPreferredPharmacyPhoneNumber() { return preferredPharmacyPhoneNumber; }
+    public void setPreferredPharmacyPhoneNumber(String preferredPharmacyPhoneNumber) { this.preferredPharmacyPhoneNumber = preferredPharmacyPhoneNumber; }
 
-    public void setDateOfBirth(String dateOfBirth) {
-        this.dateOfBirth = dateOfBirth;
-    }
+    public String getAllergies() { return allergies; }
+    public void setAllergies(String allergies) { this.allergies = allergies; }
 
-    public Integer getAge() {
-        return age;
-    }
+    public String getMedicalHistory() { return medicalHistory; }
+    public void setMedicalHistory(String medicalHistory) { this.medicalHistory = medicalHistory; }
 
-    public void setAge(Integer age) {
-        this.age = age;
-    }
+    public String getCurrentMedications() { return currentMedications; }
+    public void setCurrentMedications(String currentMedications) { this.currentMedications = currentMedications; }
 
-    public String getGender() {
-        return gender;
-    }
+    public String getChronicConditions() { return chronicConditions; }
+    public void setChronicConditions(String chronicConditions) { this.chronicConditions = chronicConditions; }
 
-    public void setGender(String gender) {
-        this.gender = gender;
-    }
+    public String getBloodType() { return bloodType; }
+    public void setBloodType(String bloodType) { this.bloodType = bloodType; }
 
-    public String getInsuranceNumber() {
-        return insuranceNumber;
-    }
+    public String getVaccinationStatus() { return vaccinationStatus; }
+    public void setVaccinationStatus(String vaccinationStatus) { this.vaccinationStatus = vaccinationStatus; }
 
-    public void setInsuranceNumber(String insuranceNumber) {
-        this.insuranceNumber = insuranceNumber;
-    }
+    public String getHeight() { return height; }
+    public void setHeight(String height) { this.height = height; }
 
-    public String getInsuranceCompany() {
-        return insuranceCompany;
-    }
+    public Double getWeight() { return weight; }
+    public void setWeight(Double weight) { this.weight = weight; }
 
-    public void setInsuranceCompany(String insuranceCompany) {
-        this.insuranceCompany = insuranceCompany;
-    }
+    // Emergency Contact Getters/Setters
+    public String getEmergencyContactName() { return emergencyContactName; }
+    public void setEmergencyContactName(String emergencyContactName) { this.emergencyContactName = emergencyContactName; }
 
-    public String getPreferredPharmacyUid() {
-        return preferredPharmacyUid;
-    }
+    public String getEmergencyContactRelationship() { return emergencyContactRelationship; }
+    public void setEmergencyContactRelationship(String emergencyContactRelationship) { this.emergencyContactRelationship = emergencyContactRelationship; }
 
-    public void setPreferredPharmacyUid(String preferredPharmacyUid) {
-        this.preferredPharmacyUid = preferredPharmacyUid;
-    }
+    public String getEmergencyContactPhone() { return emergencyContactPhone; }
+    public void setEmergencyContactPhone(String emergencyContactPhone) { this.emergencyContactPhone = emergencyContactPhone; }
 
-    public String getPreferredPharmacyName() {
-        return preferredPharmacyName;
-    }
+    public Long getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Long createdAt) { this.createdAt = createdAt; }
 
-    public void setPreferredPharmacyName(String preferredPharmacyName) {
-        this.preferredPharmacyName = preferredPharmacyName;
-    }
-
-    public String getPreferredPharmacyAddress() {
-        return preferredPharmacyAddress;
-    }
-
-    public void setPreferredPharmacyAddress(String preferredPharmacyAddress) {
-        this.preferredPharmacyAddress = preferredPharmacyAddress;
-    }
-
-    public String getPreferredPharmacyPhoneNumber() {
-        return preferredPharmacyPhoneNumber;
-    }
-
-    public void setPreferredPharmacyPhoneNumber(String preferredPharmacyPhoneNumber) {
-        this.preferredPharmacyPhoneNumber = preferredPharmacyPhoneNumber;
-    }
-
-    public String getAllergies() {
-        return allergies;
-    }
-
-    public void setAllergies(String allergies) {
-        this.allergies = allergies;
-    }
-
-    public String getMedicalHistory() {
-        return medicalHistory;
-    }
-
-    public void setMedicalHistory(String medicalHistory) {
-        this.medicalHistory = medicalHistory;
-    }
-
-    public String getCurrentMedications() {
-        return currentMedications;
-    }
-
-    public void setCurrentMedications(String currentMedications) {
-        this.currentMedications = currentMedications;
-    }
-
-    public String getChronicConditions() {
-        return chronicConditions;
-    }
-
-    public void setChronicConditions(String chronicConditions) {
-        this.chronicConditions = chronicConditions;
-    }
-
-    public String getBloodType() {
-        return bloodType;
-    }
-
-    public void setBloodType(String bloodType) {
-        this.bloodType = bloodType;
-    }
-
-    public String getVaccinationStatus() {
-        return vaccinationStatus;
-    }
-
-    public void setVaccinationStatus(String vaccinationStatus) {
-        this.vaccinationStatus = vaccinationStatus;
-    }
-
-    public String getHeight() {
-        return height;
-    }
-
-    public void setHeight(String height) {
-        this.height = height;
-    }
-
-    public Double getWeight() {
-        return weight;
-    }
-
-    public void setWeight(Double weight) {
-        this.weight = weight;
-    }
-
-    public Long getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Long createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public Long getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(Long updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    public Long getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(Long updatedAt) { this.updatedAt = updatedAt; }
 
     /**
      * Convert PatientProfile to a Map for Firestore storage
@@ -306,6 +186,12 @@ public class PatientProfile {
         result.put("medicalHistory", medicalHistory);
         result.put("height", height);
         result.put("weight", weight);
+
+        // Emergency contact
+        result.put("emergencyContactName", emergencyContactName);
+        result.put("emergencyContactRelationship", emergencyContactRelationship);
+        result.put("emergencyContactPhone", emergencyContactPhone);
+
         result.put("createdAt", createdAt);
         result.put("updatedAt", updatedAt);
         return result;

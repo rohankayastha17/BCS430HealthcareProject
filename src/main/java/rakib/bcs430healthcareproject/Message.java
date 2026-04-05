@@ -23,6 +23,8 @@ public class Message {
     private String messageText;
     private Long createdAt;
 
+    private Boolean read;
+
     public Message() {
     }
 
@@ -104,5 +106,13 @@ public class Message {
 
     public void setCreatedAt(Long createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Boolean getRead() {
+        return read;
+    }
+
+    public void setRead(Boolean read) {
+        this.read = read;
     }
 }

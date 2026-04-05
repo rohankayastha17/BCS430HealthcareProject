@@ -16,6 +16,9 @@ public class UserContext {
 
     // For patient appointment booking
     private Doctor selectedDoctor;
+
+    // For doctor viewing patient history/details
+    private String selectedPatientUid;
     private PatientProfile selectedPatientProfile;
 
     private UserContext() {
@@ -33,6 +36,7 @@ public class UserContext {
         this.role = "PATIENT";
         this.patientProfile = profile;
         this.doctorProfile = null;
+        this.pharmacyProfile = null;
     }
 
     public void setDoctorUserData(String uid, DoctorProfile profile) {
@@ -58,6 +62,7 @@ public class UserContext {
         this.doctorProfile = null;
         this.pharmacyProfile = null;
         this.selectedDoctor = null;
+        this.selectedPatientUid = null;
         this.selectedPatientProfile = null;
     }
 
@@ -153,6 +158,14 @@ public class UserContext {
         this.selectedDoctor = null;
     }
 
+    public void setSelectedPatientUid(String selectedPatientUid) {
+        this.selectedPatientUid = selectedPatientUid;
+    }
+
+    public String getSelectedPatientUid() {
+        return selectedPatientUid;
+    }
+
     public void setSelectedPatientProfile(PatientProfile selectedPatientProfile) {
         this.selectedPatientProfile = selectedPatientProfile;
     }
@@ -162,6 +175,12 @@ public class UserContext {
     }
 
     public void clearSelectedPatientProfile() {
+        this.selectedPatientUid = null;
+        this.selectedPatientProfile = null;
+    }
+
+    public void clearSelectedPatient() {
+        this.selectedPatientUid = null;
         this.selectedPatientProfile = null;
     }
 }

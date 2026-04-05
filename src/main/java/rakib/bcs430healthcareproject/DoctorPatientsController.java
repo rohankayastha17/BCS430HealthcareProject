@@ -89,17 +89,15 @@ public class DoctorPatientsController {
 
         HBox buttonRow = new HBox(10);
 
-        Button viewProfileButton = new Button("View Profile");
-        viewProfileButton.setStyle("-fx-background-color: #0F766E; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;");
-        viewProfileButton.setOnAction(event -> onViewProfile(patient));
+        Button medicalHistoryButton = new Button("Medical History");
+        medicalHistoryButton.setStyle("-fx-background-color: #1E40AF; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;");
+        medicalHistoryButton.setOnAction(event -> onViewMedicalHistory(patient));
 
         Button sendPrescriptionButton = new Button("Send Prescription");
         sendPrescriptionButton.setStyle("-fx-background-color: #14B8A6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;");
         sendPrescriptionButton.setOnAction(event -> onSendPrescription(patient));
 
-        Button sendTextButton = new Button("Send Text");
-        sendTextButton.setStyle("-fx-background-color: #0EA5E9; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;");
-        sendTextButton.setOnAction(event -> onSendText(patient));
+
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -112,13 +110,26 @@ public class DoctorPatientsController {
         HBox.setHgrow(spacer, Priority.ALWAYS);
         buttonRow.getChildren().addAll(viewProfileButton, sendPrescriptionButton, refillPrescriptionButton, spacer);
 
+        buttonRow.getChildren().addAll(
+                medicalHistoryButton,
+                sendPrescriptionButton,
+                refillPrescriptionButton,
+                spacer
+        );
+
         card.getChildren().addAll(nameLabel, emailLabel, phoneLabel, medsLabel, buttonRow);
         return card;
     }
 
-    private void onViewProfile(PatientProfile patient) {
+    private void onViewMedicalHistory(PatientProfile patient) {
+        if (patient == null) {
+            showStatus("No patient selected.", true);
+            return;
+        }
+
+        userContext.setSelectedPatientUid(patient.getUid());
         userContext.setSelectedPatientProfile(patient);
-        SceneRouter.go("patient-profile-view.fxml", "Patient Profile");
+        SceneRouter.go("doctor-patient-history-view.fxml", "Patient Medical History");
     }
 
     private void onSendPrescription(PatientProfile patient) {
