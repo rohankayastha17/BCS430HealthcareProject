@@ -57,16 +57,13 @@ public class DoctorPrescriptionController {
                         ? "Prescribing Doctor: Dr. " + userContext.getName()
                         : "Prescribing Doctor"
         );
-        patientNameLabel.setText(selectedPatient.getName() != null ? selectedPatient.getName() : "Patient");
-        doctorNameLabel.setText(userContext.getName() != null ? "Prescribing Doctor: Dr. " + userContext.getName() : "Prescribing Doctor");
+
         populatePreferredPharmacy();
     }
 
     @FXML
     private void onSendPrescription() {
-
         String pharmacyName = safeTrim(pharmacyNameField.getText());
-        String pharmacyAddress = safeTrim(pharmacyAddressArea.getText());
         String pharmacyStreetAddress = safeTrim(pharmacyStreetAddressField.getText());
         String pharmacyCity = safeTrim(pharmacyCityField.getText());
         String pharmacyState = safeTrim(pharmacyStateField.getText()).toUpperCase();
@@ -82,49 +79,72 @@ public class DoctorPrescriptionController {
         String dosage = safeTrim(dosageField.getText());
         String quantity = safeTrim(quantityField.getText());
         String refillDetails = safeTrim(refillDetailsField.getText());
-        String medicationInformation = buildMedicationInformation(medicationName, dosage, quantity, refillDetails);
+        String medicationInformation = buildMedicationInformation(
+                medicationName,
+                dosage,
+                quantity,
+                refillDetails
+        );
         Integer remainingRefills = PrescriptionRefillSupport.parseRemainingRefills(refillDetails);
         String instructions = safeTrim(instructionsArea.getText());
 
         // Validation
-        if (pharmacyAddress.isBlank()) {
-            showStatus("Pharmacy address is required.", true);
-        if (pharmacyStreetAddress.isBlank() || pharmacyCity.isBlank() || pharmacyState.isBlank() || pharmacyZip.isBlank()) {
+        if (pharmacyName.isBlank()) {
+            showStatus("Pharmacy name is required.", true);
+            return;
+        }
+
+        if (pharmacyStreetAddress.isBlank() || pharmacyCity.isBlank()
+                || pharmacyState.isBlank() || pharmacyZip.isBlank()) {
             showStatus("Street address, city, state, and ZIP are required.", true);
             return;
         }
+
         if (pharmacyState.length() != 2) {
             showStatus("State must be a 2-letter abbreviation.", true);
             return;
         }
+
         if (!pharmacyZip.matches("\\d{5}")) {
             showStatus("ZIP code must be 5 digits.", true);
             return;
         }
+
+        if (pharmacyAddress.isBlank()) {
+            showStatus("Pharmacy address is required.", true);
+            return;
+        }
+
         if (pharmacyPhone.isBlank()) {
             showStatus("Pharmacy phone number is required.", true);
             return;
         }
+
         if (medicationName.isBlank()) {
             showStatus("Medication name is required.", true);
             return;
         }
+
         if (dosage.isBlank()) {
             showStatus("Dosage is required.", true);
             return;
         }
+
         if (quantity.isBlank()) {
             showStatus("Quantity is required.", true);
             return;
         }
+
         if (refillDetails.isBlank()) {
             showStatus("Refill details are required.", true);
             return;
         }
+
         if (remainingRefills == null) {
             showStatus("Refill details must include a count, like '2 refills remaining' or 'No refills remaining'.", true);
             return;
         }
+
         if (instructions.isBlank()) {
             showStatus("Instructions are required.", true);
             return;
@@ -207,18 +227,26 @@ public class DoctorPrescriptionController {
 
         String fullAddress = safeTrim(selectedPatient.getPreferredPharmacyAddress());
         if (!fullAddress.isBlank()) {
-            String[] parts = fullAddress.split(",\\s*");
-            if (parts.length > 0) {
-                pharmacyStreetAddressField.setText(parts[0]);
+            String[] parts = fullAddress.split(",");
+
+            if (parts.length >= 1) {
+                pharmacyStreetAddressField.setText(parts[0].trim());
             }
-            if (parts.length > 1) {
-                pharmacyCityField.setText(parts[1]);
+
+            if (parts.length >= 2) {
+                pharmacyCityField.setText(parts[1].trim());
             }
-            if (parts.length > 2) {
-                pharmacyStateField.setText(parts[2].trim());
-            }
-            if (parts.length > 3) {
-                pharmacyZipField.setText(parts[3].trim());
+
+            if (parts.length >= 3) {
+                String stateZip = parts[2].trim();
+
+                String[] stateZipParts = stateZip.split("\\s+");
+                if (stateZipParts.length >= 1) {
+                    pharmacyStateField.setText(stateZipParts[0].trim());
+                }
+                if (stateZipParts.length >= 2) {
+                    pharmacyZipField.setText(stateZipParts[1].trim());
+                }
             }
         }
 

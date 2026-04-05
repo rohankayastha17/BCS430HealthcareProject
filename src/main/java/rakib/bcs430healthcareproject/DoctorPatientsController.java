@@ -3,14 +3,8 @@ package rakib.bcs430healthcareproject;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
-import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceDialog;
-import javafx.scene.control.Label;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,10 +41,12 @@ public class DoctorPatientsController {
 
     private void loadPatients() {
         showStatus("Loading patient list...", false);
+
         firebaseService.getDoctorPatients(userContext.getUid())
                 .thenAccept(patients -> Platform.runLater(() -> renderPatients(patients)))
                 .exceptionally(e -> {
-                    Platform.runLater(() -> showStatus("Failed to load patients: " + cleanErrorMessage(e), true));
+                    Platform.runLater(() ->
+                            showStatus("Failed to load patients: " + cleanErrorMessage(e), true));
                     return null;
                 });
     }
@@ -59,11 +55,12 @@ public class DoctorPatientsController {
         patientsListVBox.getChildren().clear();
 
         if (patients == null || patients.isEmpty()) {
-            showStatus("No patients are linked to this doctor yet. Once appointments are booked, they will appear here.", false);
+            showStatus("No patients are linked to this doctor yet.", false);
             return;
         }
 
         showStatus("Found " + patients.size() + " patient(s).", false);
+
         for (PatientProfile patient : patients) {
             patientsListVBox.getChildren().add(createPatientCard(patient));
         }
@@ -75,59 +72,45 @@ public class DoctorPatientsController {
         card.setStyle("-fx-background-color: white; -fx-background-radius: 12; -fx-border-color: #D1FAE5; -fx-border-radius: 12;");
 
         Label nameLabel = new Label(patient.getName() != null ? patient.getName() : "Unnamed Patient");
-        nameLabel.setStyle("-fx-text-fill: #0F172A; -fx-font-size: 17; -fx-font-weight: bold;");
+        nameLabel.setStyle("-fx-font-size: 17; -fx-font-weight: bold;");
 
         Label emailLabel = new Label("Email: " + fallback(patient.getEmail()));
-        emailLabel.setStyle("-fx-text-fill: #475569; -fx-font-size: 13;");
-
         Label phoneLabel = new Label("Phone: " + fallback(patient.getPhoneNumber()));
-        phoneLabel.setStyle("-fx-text-fill: #475569; -fx-font-size: 13;");
 
         Label medsLabel = new Label("Current Medications: " + fallback(patient.getCurrentMedications()));
         medsLabel.setWrapText(true);
-        medsLabel.setStyle("-fx-text-fill: #475569; -fx-font-size: 13;");
 
         HBox buttonRow = new HBox(10);
 
         Button medicalHistoryButton = new Button("Medical History");
-        medicalHistoryButton.setStyle("-fx-background-color: #1E40AF; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;");
-        medicalHistoryButton.setOnAction(event -> onViewMedicalHistory(patient));
+        medicalHistoryButton.setOnAction(e -> onViewMedicalHistory(patient));
 
         Button sendPrescriptionButton = new Button("Send Prescription");
-        sendPrescriptionButton.setStyle("-fx-background-color: #14B8A6; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;");
-        sendPrescriptionButton.setOnAction(event -> onSendPrescription(patient));
+        sendPrescriptionButton.setOnAction(e -> onSendPrescription(patient));
 
+        Button sendTextButton = new Button("Send Text");
+        sendTextButton.setOnAction(e -> onSendText(patient));
 
-
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        buttonRow.getChildren().addAll(viewProfileButton, sendPrescriptionButton, sendTextButton, spacer);
         Button refillPrescriptionButton = new Button("Refill Prescription");
-        refillPrescriptionButton.setStyle("-fx-background-color: #0EA5E9; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;");
-        refillPrescriptionButton.setOnAction(event -> onRefillPrescription(patient));
+        refillPrescriptionButton.setOnAction(e -> onRefillPrescription(patient));
 
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        buttonRow.getChildren().addAll(viewProfileButton, sendPrescriptionButton, refillPrescriptionButton, spacer);
 
         buttonRow.getChildren().addAll(
                 medicalHistoryButton,
                 sendPrescriptionButton,
+                sendTextButton,
                 refillPrescriptionButton,
                 spacer
         );
 
         card.getChildren().addAll(nameLabel, emailLabel, phoneLabel, medsLabel, buttonRow);
+
         return card;
     }
 
     private void onViewMedicalHistory(PatientProfile patient) {
-        if (patient == null) {
-            showStatus("No patient selected.", true);
-            return;
-        }
-
-        userContext.setSelectedPatientUid(patient.getUid());
         userContext.setSelectedPatientProfile(patient);
         SceneRouter.go("doctor-patient-history-view.fxml", "Patient Medical History");
     }
@@ -140,56 +123,54 @@ public class DoctorPatientsController {
     private void onSendText(PatientProfile patient) {
         userContext.setSelectedPatientProfile(patient);
         SceneRouter.go("doctor-message-view.fxml", "Send Message");
+    }
+
     private void onRefillPrescription(PatientProfile patient) {
-        showStatus("Loading refillable prescriptions for " + fallback(patient.getName()) + "...", false);
+        showStatus("Loading refillable prescriptions...", false);
+
         firebaseService.getPatientPrescriptions(patient.getUid())
-                .thenAccept(prescriptions -> Platform.runLater(() -> showRefillChooser(patient, prescriptions)))
+                .thenAccept(prescriptions -> Platform.runLater(() ->
+                        showRefillChooser(patient, prescriptions)))
                 .exceptionally(e -> {
-                    Platform.runLater(() -> showStatus("Failed to load refill options: " + cleanErrorMessage(e), true));
+                    Platform.runLater(() ->
+                            showStatus("Failed: " + cleanErrorMessage(e), true));
                     return null;
                 });
     }
 
     private void showRefillChooser(PatientProfile patient, List<Prescription> prescriptions) {
-        List<PrescriptionChoice> refillablePrescriptions = new ArrayList<>();
+
+        List<PrescriptionChoice> refillable = new ArrayList<>();
+
         if (prescriptions != null) {
-            for (Prescription prescription : prescriptions) {
-                Integer remainingRefills = PrescriptionRefillSupport.getRemainingRefills(prescription);
-                if (remainingRefills != null
-                        && remainingRefills > 0
-                        && Prescription.STATUS_FILLED.equalsIgnoreCase(prescription.getStatus())
-                        && !Boolean.TRUE.equals(prescription.getRefillRequested())) {
-                    refillablePrescriptions.add(new PrescriptionChoice(prescription));
+            for (Prescription p : prescriptions) {
+                Integer remaining = PrescriptionRefillSupport.getRemainingRefills(p);
+
+                if (remaining != null && remaining > 0) {
+                    refillable.add(new PrescriptionChoice(p));
                 }
             }
         }
 
-        if (refillablePrescriptions.isEmpty()) {
-            showStatus("No refills are available for " + fallback(patient.getName()) + ".", true);
+        if (refillable.isEmpty()) {
+            showStatus("No refills available.", true);
             return;
         }
 
-        ChoiceDialog<PrescriptionChoice> dialog = new ChoiceDialog<>(refillablePrescriptions.getFirst(), refillablePrescriptions);
-        dialog.setTitle("Refill Prescription");
-        dialog.setHeaderText("Choose a prescription to refill for " + fallback(patient.getName()));
-        dialog.setContentText("Prescription:");
+        ChoiceDialog<PrescriptionChoice> dialog =
+                new ChoiceDialog<>(refillable.get(0), refillable);
 
-        Optional<PrescriptionChoice> selectedChoice = dialog.showAndWait();
-        if (selectedChoice.isEmpty()) {
-            showStatus("Refill cancelled.", false);
-            return;
-        }
+        Optional<PrescriptionChoice> result = dialog.showAndWait();
 
-        Prescription prescription = selectedChoice.get().prescription;
-        showStatus("Sending refill for " + fallback(patient.getName()) + "...", false);
-        firebaseService.refillPrescription(prescription.getPrescriptionId(), "DOCTOR", userContext.getName(), null)
-                .thenAccept(refill -> Platform.runLater(() -> {
-                    showStatus("Refill request sent for " + fallback(refill.getMedicationName()) + ".", false);
-                }))
-                .exceptionally(e -> {
-                    Platform.runLater(() -> showStatus(cleanErrorMessage(e), true));
-                    return null;
-                });
+        result.ifPresent(choice -> {
+            firebaseService.refillPrescription(
+                    choice.prescription.getPrescriptionId(),
+                    "DOCTOR",
+                    userContext.getName(),
+                    null
+            ).thenAccept(r -> Platform.runLater(() ->
+                    showStatus("Refill sent.", false)));
+        });
     }
 
     @FXML
@@ -197,40 +178,28 @@ public class DoctorPatientsController {
         SceneRouter.go("doctor-dashboard-view.fxml", "Doctor Dashboard");
     }
 
-    private void showStatus(String message, boolean isError) {
-        statusLabel.setText(message);
-        statusLabel.setStyle(isError
-                ? "-fx-text-fill: #DC2626; -fx-font-size: 12; -fx-font-weight: bold;"
-                : "-fx-text-fill: #0F766E; -fx-font-size: 12; -fx-font-weight: bold;");
+    private void showStatus(String msg, boolean error) {
+        statusLabel.setText(msg);
     }
 
-    private String cleanErrorMessage(Throwable throwable) {
-        if (throwable == null) {
-            return "Unknown error";
-        }
-
-        Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
-        return cause.getMessage() != null ? cause.getMessage() : "Unknown error";
+    private String cleanErrorMessage(Throwable t) {
+        return t.getMessage() != null ? t.getMessage() : "Unknown error";
     }
 
-    private String fallback(String value) {
-        return value == null || value.isBlank() ? "Not provided" : value;
+    private String fallback(String v) {
+        return v == null || v.isBlank() ? "Not provided" : v;
     }
-}
 
     private static class PrescriptionChoice {
         private final Prescription prescription;
 
-        private PrescriptionChoice(Prescription prescription) {
-            this.prescription = prescription;
+        private PrescriptionChoice(Prescription p) {
+            this.prescription = p;
         }
 
         @Override
         public String toString() {
-            String medicationName = prescription.getMedicationName() != null && !prescription.getMedicationName().isBlank()
-                    ? prescription.getMedicationName()
-                    : "Medication";
-            return medicationName + " | " + PrescriptionRefillSupport.formatRemainingRefills(PrescriptionRefillSupport.getRemainingRefills(prescription));
+            return prescription.getMedicationName();
         }
     }
 }
