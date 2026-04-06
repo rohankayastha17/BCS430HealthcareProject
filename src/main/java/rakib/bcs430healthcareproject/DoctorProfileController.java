@@ -2,9 +2,14 @@ package rakib.bcs430healthcareproject;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import org.controlsfx.control.CheckComboBox;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class DoctorProfileController {
 
@@ -27,7 +32,7 @@ public class DoctorProfileController {
     @FXML private TextField publicEmailField;
 
     @FXML private CheckBox acceptingNewPatientsCheck;
-    @FXML private TextArea insuranceArea;
+    @FXML private CheckComboBox<String> insuranceCheckComboBox;
 
     // weekly availability fields
     @FXML private ComboBox<String> mondayField;
@@ -58,6 +63,7 @@ public class DoctorProfileController {
                 "Telehealth",
                 "In-Person + Telehealth"
         );
+        insuranceCheckComboBox.getItems().setAll(InsuranceSupport.commonInsuranceProviders());
 
         setupAvailabilityDropdowns();
         setEditing(false);
@@ -141,7 +147,7 @@ public class DoctorProfileController {
         acceptingNewPatientsCheck.setSelected(
                 doctor.getAcceptingNewPatients() != null && doctor.getAcceptingNewPatients());
 
-        insuranceArea.setText(doctor.getInsuranceInfo());
+        applyInsuranceSelection(doctor.getInsuranceInfo());
 
         populateAvailabilityFields(doctor.getAvailability(), doctor.getHours());
 
@@ -169,7 +175,7 @@ public class DoctorProfileController {
         acceptingNewPatientsCheck.setSelected(
                 profile.getAcceptingNewPatients() != null && profile.getAcceptingNewPatients());
 
-        insuranceArea.setText(profile.getInsuranceInfo());
+        applyInsuranceSelection(profile.getInsuranceInfo());
 
         populateAvailabilityFields(profile.getAvailability(), profile.getHours());
 
@@ -213,7 +219,7 @@ public class DoctorProfileController {
         phoneField.setText("(555) 555-5555");
         publicEmailField.setText("office@tealcare.com");
         acceptingNewPatientsCheck.setSelected(true);
-        insuranceArea.setText("Aetna, BCBS, UnitedHealthcare");
+        applyInsuranceSelection("Aetna, UnitedHealthcare");
 
         mondayField.setValue("9:00 AM - 5:00 PM");
         tuesdayField.setValue("9:00 AM - 5:00 PM");
@@ -312,7 +318,7 @@ public class DoctorProfileController {
         tempProfile.setEmail(text(publicEmailField));
 
         tempProfile.setAcceptingNewPatients(acceptingNewPatientsCheck.isSelected());
-        tempProfile.setInsuranceInfo(text(insuranceArea));
+        tempProfile.setInsuranceInfo(selectedInsuranceInfo());
 
         Map<String, String> availability = new HashMap<>();
         putAvailabilityIfOpen(availability, "Monday", mondayField);
@@ -403,7 +409,7 @@ public class DoctorProfileController {
         publicEmailField.setDisable(disabled);
 
         acceptingNewPatientsCheck.setDisable(disabled);
-        insuranceArea.setDisable(disabled);
+        insuranceCheckComboBox.setDisable(disabled);
 
         mondayField.setDisable(disabled);
         tuesdayField.setDisable(disabled);
@@ -445,7 +451,7 @@ public class DoctorProfileController {
                 text(clinicNameField), text(addressField), text(cityField), text(stateField), text(zipField),
                 text(phoneField), text(publicEmailField),
                 acceptingNewPatientsCheck.isSelected(),
-                text(insuranceArea),
+                selectedInsuranceInfo(),
                 text(mondayField), text(tuesdayField), text(wednesdayField),
                 text(thursdayField), text(fridayField), text(saturdayField), text(sundayField),
                 text(hoursArea),
@@ -470,7 +476,7 @@ public class DoctorProfileController {
         publicEmailField.setText(s.publicEmail);
 
         acceptingNewPatientsCheck.setSelected(s.acceptingNewPatients);
-        insuranceArea.setText(s.insurance);
+        applyInsuranceSelection(s.insurance);
 
         mondayField.setValue(s.monday);
         tuesdayField.setValue(s.tuesday);
@@ -514,6 +520,36 @@ public class DoctorProfileController {
         }
 
         return message.replace("java.lang.RuntimeException: ", "").trim();
+    }
+
+    private void applyInsuranceSelection(String insuranceInfo) {
+        insuranceCheckComboBox.getCheckModel().clearChecks();
+
+        List<String> selectedInsurances = parseInsuranceInfo(insuranceInfo);
+        for (String insurance : selectedInsurances) {
+            if (insuranceCheckComboBox.getItems().contains(insurance)) {
+                insuranceCheckComboBox.getCheckModel().check(insurance);
+            }
+        }
+    }
+
+    private List<String> parseInsuranceInfo(String insuranceInfo) {
+        if (insuranceInfo == null || insuranceInfo.isBlank()) {
+            return new ArrayList<>();
+        }
+
+        return Arrays.stream(insuranceInfo.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .toList();
+    }
+
+    private String selectedInsuranceInfo() {
+        return insuranceCheckComboBox.getCheckModel().getCheckedItems().stream()
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .distinct()
+                .collect(Collectors.joining(", "));
     }
 
     private static class DoctorProfileSnapshot {

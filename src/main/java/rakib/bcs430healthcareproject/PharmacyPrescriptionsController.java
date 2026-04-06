@@ -116,6 +116,7 @@ public class PharmacyPrescriptionsController {
         Label dosageLabel = createDetailLabel("Dosage: " + valueOrDefault(getDosage(prescription), "Not provided"));
         Label quantityLabel = createDetailLabel("Quantity: " + valueOrDefault(getQuantity(prescription), "Not provided"));
         Label refillLabel = createDetailLabel("Refill Details: " + getRefillDetails(prescription));
+        Label refillIntervalLabel = createDetailLabel("Refill Schedule: " + getRefillIntervalText(prescription));
 
         Label pharmacyLabel = new Label("Pharmacy: " + formatPharmacy(prescription));
         pharmacyLabel.setWrapText(true);
@@ -127,7 +128,7 @@ public class PharmacyPrescriptionsController {
                 + " on " + formatTimestamp(prescription.getCreatedAt()));
         sentLabel.setStyle("-fx-text-fill: #64748B; -fx-font-size: 12;");
 
-        card.getChildren().addAll(topRow, medicationLabel, dosageLabel, quantityLabel, refillLabel, pharmacyLabel, instructionsLabel, sentLabel);
+        card.getChildren().addAll(topRow, medicationLabel, dosageLabel, quantityLabel, refillLabel, refillIntervalLabel, pharmacyLabel, instructionsLabel, sentLabel);
 
         if (Boolean.TRUE.equals(prescription.getRefillRequested())) {
             Label refillRequestLabel = new Label("Doctor refill request sent on " + formatTimestamp(prescription.getRefillRequestedAt()));
@@ -155,6 +156,14 @@ public class PharmacyPrescriptionsController {
             refillButton.setStyle("-fx-background-color: #0EA5E9; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;");
             refillButton.setOnAction(event -> refillPrescription(prescription, refillButton));
             actionRow.getChildren().add(refillButton);
+        }
+
+        String refillAvailability = buildRefillAvailabilityMessage(prescription);
+        if (refillAvailability != null) {
+            Label refillAvailabilityLabel = new Label(refillAvailability);
+            refillAvailabilityLabel.setWrapText(true);
+            refillAvailabilityLabel.setStyle(getRefillAvailabilityStyle(prescription));
+            card.getChildren().add(refillAvailabilityLabel);
         }
 
         if (!actionRow.getChildren().isEmpty()) {
@@ -281,6 +290,12 @@ public class PharmacyPrescriptionsController {
         return valueOrDefault(firstNonBlank(prescription.getRefillDetails(), extractMedicationPart(prescription.getMedicationInformation(), "Refills: ", null)), "Not provided");
     }
 
+    private String getRefillIntervalText(Prescription prescription) {
+        return PrescriptionRefillSupport.formatRefillInterval(
+                PrescriptionRefillSupport.getRefillIntervalDays(prescription)
+        );
+    }
+
     private String firstNonBlank(String primary, String fallback) {
         return primary != null && !primary.isBlank() ? primary : fallback;
     }
@@ -306,7 +321,51 @@ public class PharmacyPrescriptionsController {
     }
 
     private boolean canProcessRefillRequest(Prescription prescription) {
-        return Boolean.TRUE.equals(prescription.getRefillRequested()) && hasAvailableRefills(prescription);
+        return isPharmacyRefillStatus(prescription)
+                && hasAvailableRefills(prescription)
+                && PrescriptionRefillSupport.hasValidRefillInterval(prescription)
+                && PrescriptionRefillSupport.isRefillEligibleNow(prescription);
+    }
+
+    private String buildRefillAvailabilityMessage(Prescription prescription) {
+        if (!isPharmacyRefillStatus(prescription)) {
+            return null;
+        }
+        if (!hasAvailableRefills(prescription)) {
+            return "No refill can be processed because there are no refills remaining.";
+        }
+
+        Integer intervalDays = PrescriptionRefillSupport.getRefillIntervalDays(prescription);
+        if (intervalDays == null) {
+            return "Refill interval is missing for this prescription.";
+        }
+
+        Long nextRefillEligibleAt = PrescriptionRefillSupport.getNextRefillEligibleAt(prescription);
+        if (nextRefillEligibleAt == null) {
+            return "Next refill date is unavailable for this prescription.";
+        }
+
+        if (PrescriptionRefillSupport.isRefillEligibleNow(prescription)) {
+            return "Refill available now. Eligible since " + formatTimestamp(nextRefillEligibleAt) + ".";
+        }
+
+        return "Next refill available on " + formatTimestamp(nextRefillEligibleAt) + ".";
+    }
+
+    private String getRefillAvailabilityStyle(Prescription prescription) {
+        return canProcessRefillRequest(prescription)
+                ? "-fx-text-fill: #166534; -fx-font-size: 12; -fx-font-weight: bold;"
+                : "-fx-text-fill: #92400E; -fx-font-size: 12; -fx-font-weight: bold;";
+    }
+
+    private boolean isPharmacyRefillStatus(Prescription prescription) {
+        if (prescription == null) {
+            return false;
+        }
+
+        String status = prescription.getStatus();
+        return Prescription.STATUS_FILLED.equalsIgnoreCase(status)
+                || Prescription.STATUS_REFILL_REQUESTED.equalsIgnoreCase(status);
     }
 
     private String formatStatus(String status) {

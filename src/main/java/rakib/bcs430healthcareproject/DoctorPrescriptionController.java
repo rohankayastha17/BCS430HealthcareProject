@@ -3,9 +3,12 @@ package rakib.bcs430healthcareproject;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+
+import java.util.List;
 
 /**
  * Controller for sending a prescription to a patient's pharmacy.
@@ -20,21 +23,27 @@ public class DoctorPrescriptionController {
     @FXML private TextField pharmacyStateField;
     @FXML private TextField pharmacyZipField;
     @FXML private TextField pharmacyPhoneField;
+    @FXML private TextField medicationSearchField;
+    @FXML private ComboBox<RxNormMedicationService.MedicationOption> medicationResultsComboBox;
+    @FXML private Button searchMedicationButton;
     @FXML private TextField medicationNameField;
     @FXML private TextField dosageField;
     @FXML private TextField quantityField;
     @FXML private TextField refillDetailsField;
+    @FXML private TextField refillIntervalDaysField;
     @FXML private TextArea instructionsArea;
     @FXML private Label statusLabel;
     @FXML private Button sendButton;
 
     private FirebaseService firebaseService;
+    private RxNormMedicationService rxNormMedicationService;
     private UserContext userContext;
     private PatientProfile selectedPatient;
 
     @FXML
     public void initialize() {
         firebaseService = new FirebaseService();
+        rxNormMedicationService = new RxNormMedicationService();
         userContext = UserContext.getInstance();
 
         if (!userContext.isLoggedIn() || !userContext.isDoctor()) {
@@ -59,6 +68,8 @@ public class DoctorPrescriptionController {
         );
 
         populatePreferredPharmacy();
+        medicationResultsComboBox.setDisable(true);
+        medicationResultsComboBox.setOnAction(event -> onMedicationSelected());
     }
 
     @FXML
@@ -79,6 +90,7 @@ public class DoctorPrescriptionController {
         String dosage = safeTrim(dosageField.getText());
         String quantity = safeTrim(quantityField.getText());
         String refillDetails = safeTrim(refillDetailsField.getText());
+        String refillIntervalText = safeTrim(refillIntervalDaysField.getText());
         String medicationInformation = buildMedicationInformation(
                 medicationName,
                 dosage,
@@ -86,6 +98,7 @@ public class DoctorPrescriptionController {
                 refillDetails
         );
         Integer remainingRefills = PrescriptionRefillSupport.parseRemainingRefills(refillDetails);
+        Integer refillIntervalDays = parsePositiveInteger(refillIntervalText);
         String instructions = safeTrim(instructionsArea.getText());
 
         // Validation
@@ -145,6 +158,16 @@ public class DoctorPrescriptionController {
             return;
         }
 
+        if (refillIntervalText.isBlank()) {
+            showStatus("Refill interval is required.", true);
+            return;
+        }
+
+        if (refillIntervalDays == null) {
+            showStatus("Refill interval must be a whole number of days, like 30.", true);
+            return;
+        }
+
         if (instructions.isBlank()) {
             showStatus("Instructions are required.", true);
             return;
@@ -164,6 +187,7 @@ public class DoctorPrescriptionController {
         prescription.setQuantity(quantity);
         prescription.setRefillDetails(PrescriptionRefillSupport.formatRemainingRefills(remainingRefills));
         prescription.setRemainingRefills(remainingRefills);
+        prescription.setRefillIntervalDays(refillIntervalDays);
         prescription.setMedicationInformation(medicationInformation);
         prescription.setInstructions(instructions);
 
@@ -186,6 +210,31 @@ public class DoctorPrescriptionController {
     }
 
     @FXML
+    private void onSearchMedications() {
+        String query = safeTrim(medicationSearchField.getText());
+        if (query.length() < 2) {
+            showStatus("Enter at least 2 characters to search medications.", true);
+            return;
+        }
+
+        searchMedicationButton.setDisable(true);
+        medicationResultsComboBox.setDisable(true);
+        medicationResultsComboBox.getItems().clear();
+        showStatus("Searching RxNorm medications...", false);
+
+        rxNormMedicationService.searchMedications(query)
+                .thenAccept(results -> Platform.runLater(() -> showMedicationResults(results)))
+                .exceptionally(e -> {
+                    Platform.runLater(() -> {
+                        searchMedicationButton.setDisable(false);
+                        medicationResultsComboBox.setDisable(false);
+                        showStatus("Medication search failed: " + cleanErrorMessage(e), true);
+                    });
+                    return null;
+                });
+    }
+
+    @FXML
     private void onBack() {
         SceneRouter.go("doctor-patients-view.fxml", "My Patients");
     }
@@ -197,10 +246,14 @@ public class DoctorPrescriptionController {
         pharmacyStateField.clear();
         pharmacyZipField.clear();
         pharmacyPhoneField.clear();
+        medicationSearchField.clear();
+        medicationResultsComboBox.getItems().clear();
+        medicationResultsComboBox.setDisable(true);
         medicationNameField.clear();
         dosageField.clear();
         quantityField.clear();
         refillDetailsField.clear();
+        refillIntervalDaysField.clear();
         instructionsArea.clear();
         populatePreferredPharmacy();
     }
@@ -269,5 +322,42 @@ public class DoctorPrescriptionController {
 
         Throwable cause = throwable.getCause() != null ? throwable.getCause() : throwable;
         return cause.getMessage() != null ? cause.getMessage() : "Unknown error";
+    }
+
+    private void showMedicationResults(List<RxNormMedicationService.MedicationOption> results) {
+        searchMedicationButton.setDisable(false);
+
+        if (results == null || results.isEmpty()) {
+            medicationResultsComboBox.getItems().clear();
+            medicationResultsComboBox.setDisable(true);
+            showStatus("No RxNorm medications matched that search.", true);
+            return;
+        }
+
+        medicationResultsComboBox.getItems().setAll(results);
+        medicationResultsComboBox.setDisable(false);
+        medicationResultsComboBox.getSelectionModel().selectFirst();
+        onMedicationSelected();
+        showStatus("Loaded " + results.size() + " medication option(s) from RxNorm.", false);
+    }
+
+    private void onMedicationSelected() {
+        RxNormMedicationService.MedicationOption selectedMedication = medicationResultsComboBox.getValue();
+        if (selectedMedication != null) {
+            medicationNameField.setText(selectedMedication.getDisplayName());
+        }
+    }
+
+    private Integer parsePositiveInteger(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        try {
+            int parsed = Integer.parseInt(value.trim());
+            return parsed > 0 ? parsed : null;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 }

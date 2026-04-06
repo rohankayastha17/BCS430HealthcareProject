@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 public final class PrescriptionRefillSupport {
 
     private static final Pattern FIRST_NUMBER_PATTERN = Pattern.compile("(\\d+)");
+    private static final long MILLIS_PER_DAY = 24L * 60L * 60L * 1000L;
 
     private PrescriptionRefillSupport() {
     }
@@ -53,5 +54,56 @@ public final class PrescriptionRefillSupport {
             return prescription.getRemainingRefills();
         }
         return parseRemainingRefills(prescription.getRefillDetails());
+    }
+
+    public static boolean hasValidRefillInterval(Prescription prescription) {
+        return getRefillIntervalDays(prescription) != null;
+    }
+
+    public static Integer getRefillIntervalDays(Prescription prescription) {
+        if (prescription == null) {
+            return null;
+        }
+
+        Integer intervalDays = prescription.getRefillIntervalDays();
+        if (intervalDays == null || intervalDays <= 0) {
+            return null;
+        }
+        return intervalDays;
+    }
+
+    public static String formatRefillInterval(Integer intervalDays) {
+        if (intervalDays == null || intervalDays <= 0) {
+            return "Refill interval unavailable";
+        }
+        if (intervalDays == 1) {
+            return "Refill every 1 day";
+        }
+        return "Refill every " + intervalDays + " days";
+    }
+
+    public static Long calculateNextRefillEligibleAt(Long filledAt, Integer intervalDays) {
+        if (filledAt == null || intervalDays == null || intervalDays <= 0) {
+            return null;
+        }
+        return filledAt + (intervalDays * MILLIS_PER_DAY);
+    }
+
+    public static Long getNextRefillEligibleAt(Prescription prescription) {
+        if (prescription == null) {
+            return null;
+        }
+        if (prescription.getNextRefillEligibleAt() != null) {
+            return prescription.getNextRefillEligibleAt();
+        }
+        return calculateNextRefillEligibleAt(
+                prescription.getFilledAt(),
+                getRefillIntervalDays(prescription)
+        );
+    }
+
+    public static boolean isRefillEligibleNow(Prescription prescription) {
+        Long nextEligibleAt = getNextRefillEligibleAt(prescription);
+        return nextEligibleAt != null && System.currentTimeMillis() >= nextEligibleAt;
     }
 }

@@ -23,11 +23,13 @@ public class Prescription {
     private String quantity;
     private String refillDetails;
     private Integer remainingRefills;
+    private Integer refillIntervalDays;
     private String medicationInformation;
     private String instructions;
     private String status;
     private String filledBy;
     private Long filledAt;
+    private Long nextRefillEligibleAt;
     private Long createdAt;
     private Boolean refillRequested;
     private String refillRequestedBy;
@@ -148,6 +150,14 @@ public class Prescription {
         this.remainingRefills = remainingRefills;
     }
 
+    public Integer getRefillIntervalDays() {
+        return refillIntervalDays;
+    }
+
+    public void setRefillIntervalDays(Integer refillIntervalDays) {
+        this.refillIntervalDays = refillIntervalDays;
+    }
+
     public String getMedicationInformation() {
         return medicationInformation;
     }
@@ -186,6 +196,14 @@ public class Prescription {
 
     public void setFilledAt(Long filledAt) {
         this.filledAt = filledAt;
+    }
+
+    public Long getNextRefillEligibleAt() {
+        return nextRefillEligibleAt;
+    }
+
+    public void setNextRefillEligibleAt(Long nextRefillEligibleAt) {
+        this.nextRefillEligibleAt = nextRefillEligibleAt;
     }
 
     public Long getCreatedAt() {

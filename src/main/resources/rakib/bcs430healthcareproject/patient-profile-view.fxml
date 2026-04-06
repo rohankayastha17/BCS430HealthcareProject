@@ -84,7 +84,7 @@
                         </VBox>
                         <VBox spacing="5" HBox.hgrow="ALWAYS">
                             <Label text="Insurance Company" style="-fx-text-fill: #333; -fx-font-weight: bold;"/>
-                            <TextField fx:id="insuranceCompanyField" promptText="Enter insurance company"/>
+                            <ComboBox fx:id="insuranceCompanyComboBox" promptText="Select or type insurance company" style="-fx-padding: 8;"/>
                         </VBox>
                     </HBox>
                 </VBox>

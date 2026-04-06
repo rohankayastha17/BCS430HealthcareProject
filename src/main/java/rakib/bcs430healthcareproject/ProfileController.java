@@ -24,7 +24,7 @@ public class ProfileController {
     @FXML private TextField ageField;
     @FXML private ComboBox<String> genderComboBox;
     @FXML private TextField insuranceNumberField;
-    @FXML private TextField insuranceCompanyField;
+    @FXML private ComboBox<String> insuranceCompanyComboBox;
     @FXML private ComboBox<PharmacyOption> preferredPickupPharmacyComboBox;
     @FXML private TextField emailField;
     @FXML private TextField phoneField;
@@ -58,6 +58,8 @@ public class ProfileController {
         genderComboBox.getItems().addAll("Not specified", "Male", "Female", "Other");
         bloodTypeComboBox.getItems().addAll("Not specified", "O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-");
         vaccinationStatusComboBox.getItems().addAll("Not specified", "Up to date", "Partially vaccinated", "Not vaccinated");
+        insuranceCompanyComboBox.getItems().addAll(InsuranceSupport.commonInsuranceProviders());
+        insuranceCompanyComboBox.setEditable(true);
         preferredPickupPharmacyComboBox.getItems().add(new PharmacyOption(null, "No preferred pharmacy selected", "", ""));
         
         // Setup height dropdown
@@ -123,7 +125,7 @@ public class ProfileController {
         genderComboBox.setValue(gender);
         
         insuranceNumberField.setText(currentProfile.getInsuranceNumber() != null ? currentProfile.getInsuranceNumber() : "");
-        insuranceCompanyField.setText(currentProfile.getInsuranceCompany() != null ? currentProfile.getInsuranceCompany() : "");
+        insuranceCompanyComboBox.setValue(currentProfile.getInsuranceCompany() != null ? currentProfile.getInsuranceCompany() : "");
         selectPreferredPharmacy();
         
         String bloodType = currentProfile.getBloodType() != null ? currentProfile.getBloodType() : "Not specified";
@@ -207,9 +209,7 @@ public class ProfileController {
             currentProfile.setInsuranceNumber(insuranceNumberField.getText().trim());
         }
         
-        if (insuranceCompanyField.getText() != null) {
-            currentProfile.setInsuranceCompany(insuranceCompanyField.getText().trim());
-        }
+        currentProfile.setInsuranceCompany(readInsuranceCompany());
 
         PharmacyOption preferredOption = preferredPickupPharmacyComboBox.getValue();
         if (preferredOption == null || preferredOption.uid == null || preferredOption.uid.isBlank()) {
@@ -315,7 +315,8 @@ public class ProfileController {
         ageField.setEditable(editable);
         genderComboBox.setDisable(!editable);
         insuranceNumberField.setEditable(editable);
-        insuranceCompanyField.setEditable(editable);
+        insuranceCompanyComboBox.setDisable(!editable);
+        insuranceCompanyComboBox.setEditable(editable);
         preferredPickupPharmacyComboBox.setDisable(!editable);
         bloodTypeComboBox.setDisable(!editable);
         vaccinationStatusComboBox.setDisable(!editable);
@@ -459,6 +460,19 @@ public class ProfileController {
 
     private String defaultText(String value, String fallback) {
         return value == null || value.isBlank() ? fallback : value;
+    }
+
+    private String readInsuranceCompany() {
+        String editorValue = insuranceCompanyComboBox.getEditor() == null
+                ? null
+                : insuranceCompanyComboBox.getEditor().getText();
+
+        if (editorValue != null && !editorValue.isBlank()) {
+            return editorValue.trim();
+        }
+
+        String selectedValue = insuranceCompanyComboBox.getValue();
+        return selectedValue == null || selectedValue.isBlank() ? null : selectedValue.trim();
     }
 
     private static class PharmacyOption {

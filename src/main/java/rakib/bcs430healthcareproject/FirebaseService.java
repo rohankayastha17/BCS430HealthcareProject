@@ -1018,6 +1018,9 @@ public class FirebaseService {
                     prescription.setRemainingRefills(parsedRemainingRefills);
                     prescription.setRefillDetails(PrescriptionRefillSupport.formatRemainingRefills(parsedRemainingRefills));
                 }
+                if (!PrescriptionRefillSupport.hasValidRefillInterval(prescription)) {
+                    throw new RuntimeException("Refill interval must be provided in days.");
+                }
                 if (prescription.getInstructions() == null || prescription.getInstructions().isBlank()) {
                     throw new RuntimeException("Prescription instructions are required.");
                 }
@@ -1350,8 +1353,15 @@ public class FirebaseService {
                 }
 
                 prescription.setStatus(Prescription.STATUS_FILLED);
-                prescription.setFilledAt(System.currentTimeMillis());
+                long filledAt = System.currentTimeMillis();
+                prescription.setFilledAt(filledAt);
                 prescription.setFilledBy(pharmacyProfile.getPharmacyName());
+                prescription.setNextRefillEligibleAt(
+                        PrescriptionRefillSupport.calculateNextRefillEligibleAt(
+                                filledAt,
+                                PrescriptionRefillSupport.getRefillIntervalDays(prescription)
+                        )
+                );
 
                 firestore.collection(PRESCRIPTIONS_COLLECTION)
                         .document(prescriptionId)
@@ -1413,16 +1423,39 @@ public class FirebaseService {
                 }
 
                 if ("PHARMACY".equalsIgnoreCase(actorRole)) {
-                    if (!Boolean.TRUE.equals(sourcePrescription.getRefillRequested())) {
-                        throw new RuntimeException("A doctor must send a refill request before the pharmacy can refill this prescription.");
+                    String status = sourcePrescription.getStatus();
+                    if (!Prescription.STATUS_FILLED.equalsIgnoreCase(status)
+                            && !Prescription.STATUS_REFILL_REQUESTED.equalsIgnoreCase(status)) {
+                        throw new RuntimeException("Only filled prescriptions can be refilled.");
+                    }
+
+                    Integer refillIntervalDays = PrescriptionRefillSupport.getRefillIntervalDays(sourcePrescription);
+                    if (refillIntervalDays == null) {
+                        throw new RuntimeException("This prescription is missing a refill interval.");
+                    }
+
+                    Long nextRefillEligibleAt = PrescriptionRefillSupport.getNextRefillEligibleAt(sourcePrescription);
+                    if (nextRefillEligibleAt == null) {
+                        throw new RuntimeException("This prescription is missing its next refill date.");
+                    }
+
+                    long now = System.currentTimeMillis();
+                    if (now < nextRefillEligibleAt) {
+                        throw new RuntimeException("This prescription cannot be refilled until "
+                                + java.time.Instant.ofEpochMilli(nextRefillEligibleAt)
+                                .atZone(java.time.ZoneId.systemDefault())
+                                .format(java.time.format.DateTimeFormatter.ofPattern("MMM d, yyyy h:mm a")) + ".");
                     }
 
                     int updatedRemainingRefills = remainingRefills - 1;
                     sourcePrescription.setRemainingRefills(updatedRemainingRefills);
                     sourcePrescription.setRefillDetails(PrescriptionRefillSupport.formatRemainingRefills(updatedRemainingRefills));
                     sourcePrescription.setStatus(Prescription.STATUS_FILLED);
-                    sourcePrescription.setFilledAt(System.currentTimeMillis());
+                    sourcePrescription.setFilledAt(now);
                     sourcePrescription.setFilledBy(actorName != null && !actorName.isBlank() ? actorName : sourcePrescription.getPharmacyName());
+                    sourcePrescription.setNextRefillEligibleAt(
+                            PrescriptionRefillSupport.calculateNextRefillEligibleAt(now, refillIntervalDays)
+                    );
                     sourcePrescription.setRefillRequested(false);
                     sourcePrescription.setRefillRequestedBy(null);
                     sourcePrescription.setRefillRequestedAt(null);

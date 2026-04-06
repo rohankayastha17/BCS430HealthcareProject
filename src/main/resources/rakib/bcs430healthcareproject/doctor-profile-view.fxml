@@ -14,6 +14,7 @@
 <?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
+<?import org.controlsfx.control.CheckComboBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
@@ -169,10 +170,7 @@
                         <VBox styleClass="form-section">
                             <Label text="Insurance Accepted"
                                    styleClass="form-label" />
-                            <TextArea fx:id="insuranceArea"
-                                      promptText="List insurances (comma-separated): Aetna, BCBS, United..."
-                                      wrapText="true"
-                                      prefRowCount="3" />
+                            <CheckComboBox fx:id="insuranceCheckComboBox" />
                         </VBox>
 
                         <VBox styleClass="form-section">
