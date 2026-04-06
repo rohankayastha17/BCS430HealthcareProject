@@ -92,12 +92,16 @@ public class DoctorPrescriptionController {
         String refillDetails = safeTrim(refillDetailsField.getText());
         String refillIntervalText = safeTrim(refillIntervalDaysField.getText());
         String medicationInformation = buildMedicationInformation(
-                medicationName, dosage, quantity, refillDetails
+                medicationName,
+                dosage,
+                quantity,
+                refillDetails
         );
         Integer remainingRefills = PrescriptionRefillSupport.parseRemainingRefills(refillDetails);
         Integer refillIntervalDays = parsePositiveInteger(refillIntervalText);
         String instructions = safeTrim(instructionsArea.getText());
 
+        // Validation
         if (pharmacyName.isBlank()) {
             showStatus("Pharmacy name is required.", true);
             return;
@@ -116,6 +120,11 @@ public class DoctorPrescriptionController {
 
         if (!pharmacyZip.matches("\\d{5}")) {
             showStatus("ZIP code must be 5 digits.", true);
+            return;
+        }
+
+        if (pharmacyAddress.isBlank()) {
+            showStatus("Pharmacy address is required.", true);
             return;
         }
 
@@ -176,9 +185,7 @@ public class DoctorPrescriptionController {
         prescription.setMedicationName(medicationName);
         prescription.setDosage(dosage);
         prescription.setQuantity(quantity);
-        prescription.setRefillDetails(
-                PrescriptionRefillSupport.formatRemainingRefills(remainingRefills)
-        );
+        prescription.setRefillDetails(PrescriptionRefillSupport.formatRemainingRefills(remainingRefills));
         prescription.setRemainingRefills(remainingRefills);
         prescription.setRefillIntervalDays(refillIntervalDays);
         prescription.setMedicationInformation(medicationInformation);
@@ -273,23 +280,25 @@ public class DoctorPrescriptionController {
 
         String fullAddress = safeTrim(selectedPatient.getPreferredPharmacyAddress());
         if (!fullAddress.isBlank()) {
-            String[] parts = fullAddress.split(",\\s*");
+            String[] parts = fullAddress.split(",");
 
-            if (parts.length > 0) {
-                pharmacyStreetAddressField.setText(parts[0]);
+            if (parts.length >= 1) {
+                pharmacyStreetAddressField.setText(parts[0].trim());
             }
-            if (parts.length > 1) {
-                pharmacyCityField.setText(parts[1]);
+
+            if (parts.length >= 2) {
+                pharmacyCityField.setText(parts[1].trim());
             }
-            if (parts.length > 2) {
+
+            if (parts.length >= 3) {
                 String stateZip = parts[2].trim();
-                String[] stateZipParts = stateZip.split("\\s+");
 
-                if (stateZipParts.length > 0) {
-                    pharmacyStateField.setText(stateZipParts[0]);
+                String[] stateZipParts = stateZip.split("\\s+");
+                if (stateZipParts.length >= 1) {
+                    pharmacyStateField.setText(stateZipParts[0].trim());
                 }
-                if (stateZipParts.length > 1) {
-                    pharmacyZipField.setText(stateZipParts[1]);
+                if (stateZipParts.length >= 2) {
+                    pharmacyZipField.setText(stateZipParts[1].trim());
                 }
             }
         }
@@ -299,8 +308,7 @@ public class DoctorPrescriptionController {
         }
     }
 
-    private String buildMedicationInformation(String medicationName, String dosage,
-                                              String quantity, String refillDetails) {
+    private String buildMedicationInformation(String medicationName, String dosage, String quantity, String refillDetails) {
         return "Medication Name: " + medicationName
                 + " | Dosage: " + dosage
                 + " | Quantity: " + quantity

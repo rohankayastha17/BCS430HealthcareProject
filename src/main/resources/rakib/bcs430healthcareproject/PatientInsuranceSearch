@@ -1,0 +1,40 @@
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class DoctorService {
+    private final FirebaseFirestore db;
+
+    public DoctorService() {
+        db = FirebaseFirestore.getInstance();
+    }
+
+    public void findDoctorsByInsurance(String insurance, DoctorSearchCallback callback) {
+        db.collection("doctors")
+          .whereArrayContains("acceptedInsurance", insurance)
+          .get()
+          .addOnCompleteListener(task -> {
+              if (task.isSuccessful()) {
+                  List<Doctor> doctors = new ArrayList<>();
+                  for (DocumentSnapshot doc : task.getResult()) {
+                      Doctor doctor = doc.toObject(Doctor.class);
+                      if (doctor != null) {
+                          doctor.setId(doc.getId());
+                          doctors.add(doctor);
+                      }
+                  }
+                  callback.onSuccess(doctors);
+              } else {
+                  callback.onFailure(task.getException());
+              }
+          });
+    }
+
+    public interface DoctorSearchCallback {
+        void onSuccess(List<Doctor> doctors);
+        void onFailure(Exception e);
+    }
+}
