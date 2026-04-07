@@ -169,7 +169,7 @@ public class DoctorDashboardController {
 
     @FXML
     private void onSchedule() {
-        System.out.println("Schedule coming soon...");
+        SceneRouter.go("doctor-schedule-view.fxml", "Doctor Schedule");
     }
 
     @FXML

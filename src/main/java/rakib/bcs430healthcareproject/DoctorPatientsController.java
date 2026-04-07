@@ -4,7 +4,6 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
-import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.HBox;
@@ -12,9 +11,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Controller for the doctor-side patient list.
@@ -103,10 +100,6 @@ public class DoctorPatientsController {
         sendTextButton.setStyle("-fx-background-color: #0EA5E9; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;");
         sendTextButton.setOnAction(event -> onSendText(patient));
 
-        Button refillPrescriptionButton = new Button("Refill Prescription");
-        refillPrescriptionButton.setStyle("-fx-background-color: #6366F1; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 8 16;");
-        refillPrescriptionButton.setOnAction(event -> onRefillPrescription(patient));
-
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
@@ -114,7 +107,6 @@ public class DoctorPatientsController {
                 viewProfileButton,
                 sendPrescriptionButton,
                 sendTextButton,
-                refillPrescriptionButton,
                 spacer
         );
 
@@ -135,69 +127,6 @@ public class DoctorPatientsController {
     private void onSendText(PatientProfile patient) {
         userContext.setSelectedPatientProfile(patient);
         SceneRouter.go("doctor-message-view.fxml", "Send Message");
-    }
-
-    private void onRefillPrescription(PatientProfile patient) {
-        showStatus("Loading refillable prescriptions for " + fallback(patient.getName()) + "...", false);
-
-        firebaseService.getPatientPrescriptions(patient.getUid())
-                .thenAccept(prescriptions ->
-                        Platform.runLater(() -> showRefillChooser(patient, prescriptions)))
-                .exceptionally(e -> {
-                    Platform.runLater(() ->
-                            showStatus("Failed to load refill options: " + cleanErrorMessage(e), true));
-                    return null;
-                });
-    }
-
-    private void showRefillChooser(PatientProfile patient, List<Prescription> prescriptions) {
-        List<PrescriptionChoice> refillablePrescriptions = new ArrayList<>();
-
-        if (prescriptions != null) {
-            for (Prescription prescription : prescriptions) {
-                Integer remainingRefills = PrescriptionRefillSupport.getRemainingRefills(prescription);
-
-                if (remainingRefills != null
-                        && remainingRefills > 0
-                        && Prescription.STATUS_FILLED.equalsIgnoreCase(prescription.getStatus())
-                        && !Boolean.TRUE.equals(prescription.getRefillRequested())) {
-                    refillablePrescriptions.add(new PrescriptionChoice(prescription));
-                }
-            }
-        }
-
-        if (refillablePrescriptions.isEmpty()) {
-            showStatus("No refills are available for " + fallback(patient.getName()) + ".", true);
-            return;
-        }
-
-        ChoiceDialog<PrescriptionChoice> dialog =
-                new ChoiceDialog<>(refillablePrescriptions.get(0), refillablePrescriptions);
-        dialog.setTitle("Refill Prescription");
-        dialog.setHeaderText("Choose a prescription to refill for " + fallback(patient.getName()));
-        dialog.setContentText("Prescription:");
-
-        Optional<PrescriptionChoice> selectedChoice = dialog.showAndWait();
-        if (selectedChoice.isEmpty()) {
-            showStatus("Refill cancelled.", false);
-            return;
-        }
-
-        Prescription prescription = selectedChoice.get().prescription;
-        showStatus("Sending refill for " + fallback(patient.getName()) + "...", false);
-
-        firebaseService.refillPrescription(
-                        prescription.getPrescriptionId(),
-                        "DOCTOR",
-                        userContext.getName(),
-                        null
-                )
-                .thenAccept(refill -> Platform.runLater(() ->
-                        showStatus("Refill request sent for " + fallback(refill.getMedicationName()) + ".", false)))
-                .exceptionally(e -> {
-                    Platform.runLater(() -> showStatus(cleanErrorMessage(e), true));
-                    return null;
-                });
     }
 
     @FXML
@@ -223,26 +152,5 @@ public class DoctorPatientsController {
 
     private String fallback(String value) {
         return value == null || value.isBlank() ? "Not provided" : value;
-    }
-
-    private static class PrescriptionChoice {
-        private final Prescription prescription;
-
-        private PrescriptionChoice(Prescription prescription) {
-            this.prescription = prescription;
-        }
-
-        @Override
-        public String toString() {
-            String medicationName = prescription.getMedicationName() != null
-                    && !prescription.getMedicationName().isBlank()
-                    ? prescription.getMedicationName()
-                    : "Medication";
-
-            return medicationName + " | "
-                    + PrescriptionRefillSupport.formatRemainingRefills(
-                    PrescriptionRefillSupport.getRemainingRefills(prescription)
-            );
-        }
     }
 }
