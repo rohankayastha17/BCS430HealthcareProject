@@ -35,6 +35,7 @@ public class FirebaseService {
     private static final String APPOINTMENTS_COLLECTION = "appointments";
     private static final String PRESCRIPTIONS_COLLECTION = "prescriptions";
     private static final String MESSAGES_COLLECTION = "messages";
+    private static final String NOTIFICATIONS_COLLECTION = "notifications";
 
     public FirebaseService() {
         this.auth = FirebaseAuth.getInstance();
@@ -1501,6 +1502,157 @@ public class FirebaseService {
                 throw new RuntimeException("Failed to update appointment: " + e.getMessage(), e);
             }
         });
+    }
+
+    /**
+     * Creates a notification document.
+     */
+    public boolean createNotification(AppNotification notification) {
+        try {
+            Firestore db = FirestoreClient.getFirestore();
+
+            if (notification.getCreatedAt() == 0) {
+                notification.setCreatedAt(System.currentTimeMillis());
+            }
+
+            String id = notification.getNotificationId();
+            if (id == null || id.isEmpty()) {
+                id = db.collection(NOTIFICATIONS_COLLECTION).document().getId();
+                notification.setNotificationId(id);
+            }
+
+            db.collection(NOTIFICATIONS_COLLECTION)
+                    .document(id)
+                    .set(notification)
+                    .get();
+
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Retrieves all notifications for a user.
+     */
+    public List<AppNotification> getNotificationsForUser(String userUid) {
+        List<AppNotification> notifications = new ArrayList<>();
+
+        try {
+            QuerySnapshot snapshot = firestore.collection(NOTIFICATIONS_COLLECTION)
+                    .whereEqualTo("userUid", userUid)
+                    .get()
+                    .get();
+
+            for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                AppNotification notification = doc.toObject(AppNotification.class);
+                if (notification != null) {
+                    notification.setNotificationId(doc.getId());
+                    notifications.add(notification);
+                }
+            }
+
+            notifications.sort((a, b) -> Long.compare(b.getCreatedAt(), a.getCreatedAt()));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return notifications;
+    }
+
+    /**
+     * Returns unread notification count for a user.
+     */
+    public int getUnreadNotificationCount(String userUid) {
+        try {
+            QuerySnapshot snapshot = firestore.collection(NOTIFICATIONS_COLLECTION)
+                    .whereEqualTo("userUid", userUid)
+                    .whereEqualTo("read", false)
+                    .get()
+                    .get();
+
+            return snapshot.size();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+    }
+
+    /**
+     * Marks one notification as read.
+     */
+    public boolean markNotificationAsRead(String notificationId) {
+        try {
+            firestore.collection(NOTIFICATIONS_COLLECTION)
+                    .document(notificationId)
+                    .update("read", true)
+                    .get();
+
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Marks all unread notifications for a user as read.
+     */
+    public boolean markAllNotificationsAsRead(String userUid) {
+        try {
+            QuerySnapshot snapshot = firestore.collection(NOTIFICATIONS_COLLECTION)
+                    .whereEqualTo("userUid", userUid)
+                    .whereEqualTo("read", false)
+                    .get()
+                    .get();
+
+            for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                firestore.collection(NOTIFICATIONS_COLLECTION)
+                        .document(doc.getId())
+                        .update("read", true)
+                        .get();
+            }
+
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Helper: notify a patient.
+     */
+    public void notifyPatient(String patientUid, String title, String message, String type, String relatedId) {
+        AppNotification notification = new AppNotification();
+        notification.setUserUid(patientUid);
+        notification.setUserRole("PATIENT");
+        notification.setTitle(title);
+        notification.setMessage(message);
+        notification.setType(type);
+        notification.setRelatedId(relatedId);
+        notification.setRead(false);
+        notification.setCreatedAt(System.currentTimeMillis());
+
+        createNotification(notification);
+    }
+
+    /**
+     * Helper: notify a doctor.
+     */
+    public void notifyDoctor(String doctorUid, String title, String message, String type, String relatedId) {
+        AppNotification notification = new AppNotification();
+        notification.setUserUid(doctorUid);
+        notification.setUserRole("DOCTOR");
+        notification.setTitle(title);
+        notification.setMessage(message);
+        notification.setType(type);
+        notification.setRelatedId(relatedId);
+        notification.setRead(false);
+        notification.setCreatedAt(System.currentTimeMillis());
+
+        createNotification(notification);
     }
 
     /**

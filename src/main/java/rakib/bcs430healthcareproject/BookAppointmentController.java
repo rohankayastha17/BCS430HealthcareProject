@@ -35,7 +35,6 @@ public class BookAppointmentController {
     private UserContext userContext;
     private Doctor selectedDoctor;
 
-    // CHANGED: use single h so both "9:00 AM" and "10:00 AM" parse correctly
     private static final DateTimeFormatter DISPLAY_TIME_FORMAT =
             DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH);
 
@@ -59,7 +58,6 @@ public class BookAppointmentController {
         timeSlotComboBox.getItems().clear();
         timeSlotComboBox.setDisable(true);
 
-        // Only allow future dates AND only days where doctor has availability
         appointmentDatePicker.setDayCellFactory(datePicker -> new DateCell() {
             @Override
             public void updateItem(LocalDate item, boolean empty) {
@@ -169,6 +167,23 @@ public class BookAppointmentController {
             return firebaseService.bookAppointment(appointment);
         }).thenAccept(appointmentId -> {
             Platform.runLater(() -> {
+                firebaseService.notifyDoctor(
+                        selectedDoctor.getUid(),
+                        "New Appointment",
+                        patientName + " booked an appointment for " + selectedDate + " at " + selectedTime,
+                        "APPOINTMENT",
+                        appointmentId
+                );
+
+                firebaseService.notifyPatient(
+                        patientUid,
+                        "Appointment Booked",
+                        "Your appointment with Dr. " + selectedDoctor.getName()
+                                + " is scheduled for " + selectedDate + " at " + selectedTime,
+                        "APPOINTMENT",
+                        appointmentId
+                );
+
                 showStatus("Appointment booked successfully! ID: " + appointmentId, false);
                 bookButton.setDisable(false);
                 onBack();

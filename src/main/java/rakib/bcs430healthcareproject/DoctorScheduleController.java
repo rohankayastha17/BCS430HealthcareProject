@@ -186,6 +186,16 @@ public class DoctorScheduleController implements Initializable {
 
         firebaseService.updateAppointment(appointment)
                 .thenAccept(v -> Platform.runLater(() -> {
+                    firebaseService.notifyPatient(
+                            appointment.getPatientUid(),
+                            "Appointment Updated",
+                            "Your appointment with Dr. " + appointment.getDoctorName()
+                                    + " has been updated to "
+                                    + appointment.getAppointmentDate() + " at " + appointment.getAppointmentSlot(),
+                            "APPOINTMENT",
+                            appointment.getAppointmentId()
+                    );
+
                     loadAppointments();
                     clearForm();
                 }))
@@ -225,9 +235,21 @@ public class DoctorScheduleController implements Initializable {
                     appointment.setNotes(txtReason.getText().trim());
                     appointment.setNewPatient(false);
 
-                    return firebaseService.bookAppointment(appointment);
+                    return firebaseService.bookAppointment(appointment)
+                            .thenApply(id -> new AppointmentCreationResult(id, matchedPatient));
                 })
-                .thenAccept(id -> Platform.runLater(() -> {
+                .thenAccept(result -> Platform.runLater(() -> {
+                    firebaseService.notifyPatient(
+                            result.patient.getUid(),
+                            "New Appointment Scheduled",
+                            "Dr. " + userContext.getName()
+                                    + " scheduled an appointment for you on "
+                                    + scheduleDatePicker.getValue()
+                                    + " at " + comboTime.getValue(),
+                            "APPOINTMENT",
+                            result.appointmentId
+                    );
+
                     loadAppointments();
                     clearForm();
                 }))
@@ -326,7 +348,20 @@ public class DoctorScheduleController implements Initializable {
         appointment.setStatus("CANCELLED");
 
         firebaseService.updateAppointment(appointment)
-                .thenAccept(v -> Platform.runLater(this::loadAppointments))
+                .thenAccept(v -> Platform.runLater(() -> {
+                    firebaseService.notifyPatient(
+                            appointment.getPatientUid(),
+                            "Appointment Cancelled",
+                            "Your appointment with Dr. " + appointment.getDoctorName()
+                                    + " on " + appointment.getAppointmentDate()
+                                    + " at " + appointment.getAppointmentSlot()
+                                    + " has been cancelled.",
+                            "APPOINTMENT",
+                            appointment.getAppointmentId()
+                    );
+
+                    loadAppointments();
+                }))
                 .exceptionally(e -> {
                     Platform.runLater(() -> showAlert("Cancel Error", cleanErrorMessage(e)));
                     return null;
@@ -426,5 +461,15 @@ public class DoctorScheduleController implements Initializable {
         alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    private static class AppointmentCreationResult {
+        private final String appointmentId;
+        private final PatientProfile patient;
+
+        private AppointmentCreationResult(String appointmentId, PatientProfile patient) {
+            this.appointmentId = appointmentId;
+            this.patient = patient;
+        }
     }
 }

@@ -32,13 +32,15 @@ public class DoctorDashboardController {
     @FXML private Button notificationButton;
     @FXML private Button logoutButton;
 
-    // 🔥 NEW FAB BUTTON
+    // Notification badge label near bell
+    @FXML private Label notificationCountLabel;
+
+    // Message floating action button
     @FXML private Button messageFabButton;
 
     private Timeline clockTimeline;
-
-    // 🔥 NEW polling for unread
     private Timeline unreadPolling;
+    private Timeline notificationPolling;
 
     private FirebaseService firebaseService;
 
@@ -69,13 +71,23 @@ public class DoctorDashboardController {
                 doctorEmailLabel.setText("Email: [Not loaded]");
             }
 
-            // 🔥 START unread checker
+            loadNotificationCount(uid);
             startUnreadPolling(uid);
+            startNotificationPolling(uid);
 
         } else {
             welcomeLabel.setText("Welcome to Your Doctor Dashboard");
             doctorNameLabel.setText("Doctor Name: [Not loaded]");
             doctorEmailLabel.setText("Email: [Not loaded]");
+            hideNotificationBadge();
+        }
+
+        if (currentDateTimeLabel != null) {
+            currentDateTimeLabel.sceneProperty().addListener((obs, oldScene, newScene) -> {
+                if (newScene == null) {
+                    stopTimelines();
+                }
+            });
         }
     }
 
@@ -88,12 +100,6 @@ public class DoctorDashboardController {
         clockTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> updateClockLabel()));
         clockTimeline.setCycleCount(Timeline.INDEFINITE);
         clockTimeline.play();
-
-        currentDateTimeLabel.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene == null && clockTimeline != null) {
-                clockTimeline.stop();
-            }
-        });
     }
 
     private void updateClockLabel() {
@@ -101,16 +107,16 @@ public class DoctorDashboardController {
     }
 
     // =========================================================
-    // 🔥 UNREAD POLLING SYSTEM
+    // MESSAGE UNREAD POLLING
     // =========================================================
 
     private void startUnreadPolling(String uid) {
-        unreadPolling = new Timeline(new KeyFrame(Duration.seconds(3), e -> checkUnread(uid)));
+        unreadPolling = new Timeline(new KeyFrame(Duration.seconds(3), e -> checkUnreadMessages(uid)));
         unreadPolling.setCycleCount(Timeline.INDEFINITE);
         unreadPolling.play();
     }
 
-    private void checkUnread(String uid) {
+    private void checkUnreadMessages(String uid) {
         firebaseService.hasUnreadMessages(uid, "DOCTOR")
                 .thenAccept(hasUnread -> Platform.runLater(() -> updateFabIndicator(hasUnread)))
                 .exceptionally(e -> {
@@ -136,30 +142,52 @@ public class DoctorDashboardController {
     }
 
     // =========================================================
-    // 🔥 NAVIGATION TO MESSAGE SCREEN
+    // NOTIFICATION BELL SYSTEM
+    // =========================================================
+
+    private void startNotificationPolling(String uid) {
+        notificationPolling = new Timeline(new KeyFrame(Duration.seconds(5), e -> loadNotificationCount(uid)));
+        notificationPolling.setCycleCount(Timeline.INDEFINITE);
+        notificationPolling.play();
+    }
+
+    private void loadNotificationCount(String uid) {
+        CompletableFutureRunner.runAsync(() -> firebaseService.getUnreadNotificationCount(uid),
+                unreadCount -> Platform.runLater(() -> updateNotificationBadge(unreadCount)),
+                error -> {
+                    error.printStackTrace();
+                    Platform.runLater(this::hideNotificationBadge);
+                });
+    }
+
+    private void updateNotificationBadge(int unreadCount) {
+        if (notificationCountLabel == null) return;
+
+        if (unreadCount > 0) {
+            notificationCountLabel.setText(String.valueOf(unreadCount));
+            notificationCountLabel.setVisible(true);
+            notificationCountLabel.setManaged(true);
+        } else {
+            hideNotificationBadge();
+        }
+    }
+
+    private void hideNotificationBadge() {
+        if (notificationCountLabel == null) return;
+
+        notificationCountLabel.setText("");
+        notificationCountLabel.setVisible(false);
+        notificationCountLabel.setManaged(false);
+    }
+
+    // =========================================================
+    // NAVIGATION
     // =========================================================
 
     @FXML
     private void handleOpenMessages() {
         System.out.println("Opening doctor messages...");
         SceneRouter.go("doctor-message-view.fxml", "Messages");
-    }
-
-    // =========================================================
-    // OTHER BUTTONS
-    // =========================================================
-
-    private void setupNotificationBellAnimation() {
-        if (notificationButton != null) {
-            ScaleTransition pulse = new ScaleTransition(Duration.millis(800), notificationButton);
-            pulse.setFromX(1.0);
-            pulse.setFromY(1.0);
-            pulse.setToX(1.12);
-            pulse.setToY(1.12);
-            pulse.setCycleCount(2);
-            pulse.setAutoReverse(true);
-            pulse.play();
-        }
     }
 
     @FXML
@@ -180,7 +208,7 @@ public class DoctorDashboardController {
     @FXML
     private void onNotifications() {
         try {
-            SceneRouter.go("doctor-notifications-view.fxml", "Notifications");
+            SceneRouter.go("notifications-view.fxml", "Notifications");
         } catch (Exception ex) {
             ex.printStackTrace();
             Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -193,8 +221,65 @@ public class DoctorDashboardController {
 
     @FXML
     private void onLogout() {
+        stopTimelines();
         UserContext userContext = UserContext.getInstance();
         userContext.clearUserData();
         SceneRouter.go("login-view.fxml", "Login");
+    }
+
+    // =========================================================
+    // UI EFFECTS
+    // =========================================================
+
+    private void setupNotificationBellAnimation() {
+        if (notificationButton != null) {
+            ScaleTransition pulse = new ScaleTransition(Duration.millis(800), notificationButton);
+            pulse.setFromX(1.0);
+            pulse.setFromY(1.0);
+            pulse.setToX(1.12);
+            pulse.setToY(1.12);
+            pulse.setCycleCount(2);
+            pulse.setAutoReverse(true);
+            pulse.play();
+        }
+    }
+
+    // =========================================================
+    // CLEANUP
+    // =========================================================
+
+    private void stopTimelines() {
+        if (clockTimeline != null) {
+            clockTimeline.stop();
+        }
+        if (unreadPolling != null) {
+            unreadPolling.stop();
+        }
+        if (notificationPolling != null) {
+            notificationPolling.stop();
+        }
+    }
+
+    // =========================================================
+    // SMALL INTERNAL ASYNC HELPER
+    // =========================================================
+
+    private static class CompletableFutureRunner {
+        public static <T> void runAsync(
+                java.util.concurrent.Callable<T> task,
+                java.util.function.Consumer<T> onSuccess,
+                java.util.function.Consumer<Throwable> onError
+        ) {
+            java.util.concurrent.CompletableFuture.supplyAsync(() -> {
+                try {
+                    return task.call();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            }).thenAccept(onSuccess).exceptionally(error -> {
+                onError.accept(error);
+                return null;
+            });
+        }
     }
 }

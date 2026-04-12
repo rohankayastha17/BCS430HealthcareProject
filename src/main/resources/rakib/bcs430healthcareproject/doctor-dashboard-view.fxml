@@ -29,22 +29,41 @@
                 <Label fx:id="welcomeLabel"
                        style="-fx-text-fill: white; -fx-font-size: 18; -fx-font-weight: bold;" />
 
-                <Button fx:id="notificationButton"
-                        onAction="#onNotifications"
-                        prefWidth="36"
-                        prefHeight="36"
-                        minWidth="36"
-                        minHeight="36"
-                        style="-fx-background-color: transparent; -fx-cursor: hand; -fx-padding: 6; -fx-border-color: white; -fx-border-radius: 20; -fx-background-radius: 20;">
+                <!-- 🔔 BELL WITH BADGE -->
+                <StackPane>
 
-                    <graphic>
-                        <ImageView fitHeight="18" fitWidth="18" preserveRatio="true">
-                            <image>
-                                <Image url="@/rakib/bcs430healthcareproject/bell.png"/>
-                            </image>
-                        </ImageView>
-                    </graphic>
-                </Button>
+                    <Button fx:id="notificationButton"
+                            onAction="#onNotifications"
+                            prefWidth="36"
+                            prefHeight="36"
+                            minWidth="36"
+                            minHeight="36"
+                            style="-fx-background-color: transparent; -fx-cursor: hand; -fx-padding: 6; -fx-border-color: white; -fx-border-radius: 20; -fx-background-radius: 20;">
+
+                        <graphic>
+                            <ImageView fitHeight="18" fitWidth="18" preserveRatio="true">
+                                <image>
+                                    <Image url="@/rakib/bcs430healthcareproject/bell.png"/>
+                                </image>
+                            </ImageView>
+                        </graphic>
+                    </Button>
+
+                    <!-- 🔴 NOTIFICATION COUNT BADGE -->
+                    <Label fx:id="notificationCountLabel"
+                           text="0"
+                           visible="false"
+                           managed="false"
+                           style="-fx-background-color: red;
+                                  -fx-text-fill: white;
+                                  -fx-font-size: 10;
+                                  -fx-font-weight: bold;
+                                  -fx-padding: 2 6;
+                                  -fx-background-radius: 10;"
+                           StackPane.alignment="TOP_RIGHT"
+                           translateX="8"
+                           translateY="-6"/>
+                </StackPane>
 
                 <Button fx:id="logoutButton"
                         text="Logout"
@@ -110,7 +129,7 @@
 
             </VBox>
 
-            <!-- 🔥 FLOATING MESSAGE BUTTON -->
+            <!-- 💬 FLOATING MESSAGE BUTTON -->
             <Button fx:id="messageFabButton"
                     text="💬"
                     onAction="#handleOpenMessages"
