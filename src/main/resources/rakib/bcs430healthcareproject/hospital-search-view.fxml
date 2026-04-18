@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.web.WebView?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="rakib.bcs430healthcareproject.HospitalSearchController"
+            stylesheets="@app.css">
+
+    <top>
+        <VBox style="-fx-background-color: #134E4A; -fx-padding: 15;">
+            <HBox spacing="15" style="-fx-alignment: center-left;">
+                <Button onAction="#onBack" text="← Back" style="-fx-padding: 8; -fx-font-size: 12;"/>
+                <Label text="Find a Hospital" style="-fx-text-fill: white; -fx-font-size: 24; -fx-font-weight: bold;" />
+            </HBox>
+                <Label text="Browse registered hospital accounts on HealthConnect so patients can find hospitals using the app's own directory."
+                   wrapText="true"
+                   style="-fx-text-fill: #CCFBF1; -fx-font-size: 12; -fx-padding: 6 0 0 0;"/>
+            <Label fx:id="statusLabel"
+                   text=""
+                   style="-fx-text-fill: #BBF7D0; -fx-font-size: 11; -fx-padding: 5 0 0 0;"
+                   visible="false"
+                   managed="false"/>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="18" style="-fx-padding: 20; -fx-background-color: #F8FAFC;">
+            <VBox spacing="14" style="-fx-background-color: white; -fx-background-radius: 10; -fx-border-color: #D1FAE5; -fx-border-radius: 10; -fx-padding: 16;">
+                <Label text="Search Hospitals" style="-fx-text-fill: #134E4A; -fx-font-size: 15; -fx-font-weight: bold;"/>
+                <HBox spacing="15">
+                    <VBox spacing="5" HBox.hgrow="ALWAYS">
+                        <Label text="Hospital Name" style="-fx-text-fill: #334155; -fx-font-weight: bold;"/>
+                        <TextField fx:id="hospitalSearchField" promptText="Hospital name"/>
+                    </VBox>
+                    <VBox spacing="5" style="-fx-min-width: 140;">
+                        <Label text="ZIP Code" style="-fx-text-fill: #334155; -fx-font-weight: bold;"/>
+                        <TextField fx:id="zipSearchField" promptText="11735"/>
+                    </VBox>
+                </HBox>
+                <HBox spacing="10" style="-fx-alignment: center-right;">
+                    <Button fx:id="searchButton" text="Search" onAction="#onSearch"/>
+                    <Button fx:id="clearFiltersButton" text="Clear Filters" onAction="#onClearFilters"/>
+                </HBox>
+            </VBox>
+
+            <SplitPane orientation="HORIZONTAL" dividerPositions="0.47" VBox.vgrow="ALWAYS">
+                <items>
+                    <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-border-color: transparent;">
+                        <VBox fx:id="hospitalListVBox" spacing="14" style="-fx-padding: 8;">
+                            <padding>
+                                <Insets top="0" right="10" bottom="10" left="0"/>
+                            </padding>
+                        </VBox>
+                    </ScrollPane>
+                    <WebView fx:id="mapWebView" prefWidth="400"/>
+                </items>
+            </SplitPane>
+        </VBox>
+    </center>
+</BorderPane>

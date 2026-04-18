@@ -84,17 +84,6 @@
                                -fx-background-radius:8;
                                -fx-padding:10 16;"/>
 
-                <Button text="Pharmacy Portal"
-                        onAction="#onPharmacyPortal"
-                        maxWidth="Infinity"
-                        style="-fx-background-color:white;
-                               -fx-text-fill:#0F766E;
-                               -fx-font-weight:bold;
-                               -fx-border-color:#14B8A6;
-                               -fx-border-radius:8;
-                               -fx-background-radius:8;
-                               -fx-padding:10 16;"/>
-
                 <!-- Signup Link -->
                 <HBox spacing="6" alignment="CENTER">
                     <Label text="No account?"
@@ -103,6 +92,28 @@
                     <Hyperlink text="Create one"
                                onAction="#onGoSignup"
                                style="-fx-text-fill:#0F766E;"/>
+                </HBox>
+
+                <HBox spacing="10" alignment="CENTER_LEFT">
+                    <Button text="Hospital Portal"
+                            onAction="#onHospitalPortal"
+                            style="-fx-background-color:white;
+                                   -fx-text-fill:#0F766E;
+                                   -fx-font-weight:bold;
+                                   -fx-border-color:#14B8A6;
+                                   -fx-border-radius:8;
+                                   -fx-background-radius:8;
+                                   -fx-padding:10 16;"/>
+
+                    <Button text="Pharmacy Portal"
+                            onAction="#onPharmacyPortal"
+                            style="-fx-background-color:white;
+                                   -fx-text-fill:#0F766E;
+                                   -fx-font-weight:bold;
+                                   -fx-border-color:#14B8A6;
+                                   -fx-border-radius:8;
+                                   -fx-background-radius:8;
+                                   -fx-padding:10 16;"/>
                 </HBox>
 
             </VBox>

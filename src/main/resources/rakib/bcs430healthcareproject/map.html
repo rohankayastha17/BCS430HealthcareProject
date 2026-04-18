@@ -179,6 +179,10 @@
             });
         }
 
+        function addHospitalMarker(address, name, infoHtml, lat, lon) {
+            addPharmacyMarker(address, name, infoHtml, lat, lon);
+        }
+
         // Fit map to show all markers
         function fitMapToMarkers() {
             if (markers.length === 0) {
@@ -193,6 +197,7 @@
         window.clearMarkers = clearMarkers;
         window.addMarker = addMarker;
         window.addPharmacyMarker = addPharmacyMarker;
+        window.addHospitalMarker = addHospitalMarker;
         window.fitMapToMarkers = fitMapToMarkers;
     </script>
 </body>
