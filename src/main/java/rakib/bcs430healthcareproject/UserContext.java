@@ -13,6 +13,7 @@ public class UserContext {
     private PatientProfile patientProfile;
     private DoctorProfile doctorProfile;
     private PharmacyProfile pharmacyProfile;
+    private HospitalProfile hospitalProfile;
 
     // For patient appointment booking
     private Doctor selectedDoctor;
@@ -37,6 +38,7 @@ public class UserContext {
         this.patientProfile = profile;
         this.doctorProfile = null;
         this.pharmacyProfile = null;
+        this.hospitalProfile = null;
     }
 
     public void setDoctorUserData(String uid, DoctorProfile profile) {
@@ -45,12 +47,23 @@ public class UserContext {
         this.doctorProfile = profile;
         this.patientProfile = null;
         this.pharmacyProfile = null;
+        this.hospitalProfile = null;
     }
 
     public void setPharmacyUserData(String uid, PharmacyProfile profile) {
         this.uid = uid;
         this.role = "PHARMACY";
         this.pharmacyProfile = profile;
+        this.doctorProfile = null;
+        this.patientProfile = null;
+        this.hospitalProfile = null;
+    }
+
+    public void setHospitalUserData(String uid, HospitalProfile profile) {
+        this.uid = uid;
+        this.role = "HOSPITAL";
+        this.hospitalProfile = profile;
+        this.pharmacyProfile = null;
         this.doctorProfile = null;
         this.patientProfile = null;
     }
@@ -61,6 +74,7 @@ public class UserContext {
         this.patientProfile = null;
         this.doctorProfile = null;
         this.pharmacyProfile = null;
+        this.hospitalProfile = null;
         this.selectedDoctor = null;
         this.selectedPatientUid = null;
         this.selectedPatientProfile = null;
@@ -90,6 +104,10 @@ public class UserContext {
         return "PHARMACY".equals(role);
     }
 
+    public boolean isHospital() {
+        return "HOSPITAL".equals(role);
+    }
+
     public PatientProfile getProfile() {
         return patientProfile;
     }
@@ -102,6 +120,10 @@ public class UserContext {
         return pharmacyProfile;
     }
 
+    public HospitalProfile getHospitalProfile() {
+        return hospitalProfile;
+    }
+
     public String getEmail() {
         if (isPatient() && patientProfile != null) {
             return patientProfile.getEmail();
@@ -111,6 +133,9 @@ public class UserContext {
         }
         if (isPharmacy() && pharmacyProfile != null) {
             return pharmacyProfile.getEmail();
+        }
+        if (isHospital() && hospitalProfile != null) {
+            return hospitalProfile.getEmail();
         }
         return null;
     }
@@ -124,6 +149,9 @@ public class UserContext {
         }
         if (isPharmacy() && pharmacyProfile != null) {
             return pharmacyProfile.getPharmacyName();
+        }
+        if (isHospital() && hospitalProfile != null) {
+            return hospitalProfile.getHospitalName();
         }
         return null;
     }
@@ -143,6 +171,12 @@ public class UserContext {
     public void updatePharmacyProfile(PharmacyProfile updatedProfile) {
         if (isPharmacy()) {
             this.pharmacyProfile = updatedProfile;
+        }
+    }
+
+    public void updateHospitalProfile(HospitalProfile updatedProfile) {
+        if (isHospital()) {
+            this.hospitalProfile = updatedProfile;
         }
     }
 

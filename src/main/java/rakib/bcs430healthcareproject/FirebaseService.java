@@ -32,6 +32,7 @@ public class FirebaseService {
     private static final String USERS_COLLECTION = "users";
     private static final String DOCTORS_COLLECTION = "doctors";
     private static final String PHARMACIES_COLLECTION = "pharmacies";
+    private static final String HOSPITALS_COLLECTION = "hospitals";
     private static final String APPOINTMENTS_COLLECTION = "appointments";
     private static final String PRESCRIPTIONS_COLLECTION = "prescriptions";
     private static final String MESSAGES_COLLECTION = "messages";
@@ -224,6 +225,81 @@ public class FirebaseService {
         });
     }
 
+    public CompletableFuture<String> createHospital(
+            String email,
+            String password,
+            String hospitalName,
+            String phoneNumber,
+            String addressLine,
+            String city,
+            String state,
+            String zip
+    ) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
+                String fullAddress = HospitalProfile.buildFullAddress(addressLine, city, state, zip);
+                String normalizedAddress = AddressNormalizer.normalize(fullAddress);
+
+                QuerySnapshot existingLocation = firestore.collection(HOSPITALS_COLLECTION)
+                        .whereEqualTo("addressNormalized", normalizedAddress)
+                        .get()
+                        .get();
+
+                if (!existingLocation.isEmpty()) {
+                    throw new RuntimeException("That hospital location has already been claimed.");
+                }
+
+                UserRecord.CreateRequest request = new UserRecord.CreateRequest()
+                        .setEmail(normalizedEmail)
+                        .setPassword(password)
+                        .setDisplayName(hospitalName);
+
+                UserRecord userRecord = auth.createUser(request);
+                String uid = userRecord.getUid();
+
+                HospitalProfile profile = new HospitalProfile(
+                        uid,
+                        hospitalName,
+                        normalizedEmail,
+                        phoneNumber,
+                        addressLine,
+                        city,
+                        state,
+                        zip
+                );
+
+                String passwordSalt = PasswordHasher.generateSalt();
+                String passwordHash = PasswordHasher.hashPassword(password, passwordSalt);
+                profile.setPasswordHash(passwordHash);
+                profile.setPasswordSalt(passwordSalt);
+                profile.setRole("HOSPITAL");
+                profile.setCreatedAt(System.currentTimeMillis());
+                profile.setUpdatedAt(System.currentTimeMillis());
+
+                firestore.collection(HOSPITALS_COLLECTION).document(uid).set(profile).get();
+
+                Map<String, Object> userDoc = new HashMap<>();
+                userDoc.put("uid", uid);
+                userDoc.put("name", hospitalName);
+                userDoc.put("email", normalizedEmail);
+                userDoc.put("role", "HOSPITAL");
+                userDoc.put("createdAt", System.currentTimeMillis());
+
+                firestore.collection(USERS_COLLECTION).document(uid).set(userDoc).get();
+
+                return uid;
+            } catch (FirebaseAuthException e) {
+                throw new RuntimeException(handleAuthException(e));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Hospital creation interrupted.", e);
+            } catch (ExecutionException e) {
+                throw new RuntimeException("Failed to save hospital profile: " + e.getMessage(), e);
+            }
+        });
+    }
+
     public CompletableFuture<String> authenticateDoctor(String email, String password) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -299,6 +375,41 @@ public class FirebaseService {
         });
     }
 
+    public CompletableFuture<String> authenticateHospital(String email, String password) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                ApiFuture<QuerySnapshot> query = firestore.collection(HOSPITALS_COLLECTION)
+                        .whereEqualTo("email", email)
+                        .get();
+
+                QuerySnapshot querySnapshot = query.get();
+
+                if (querySnapshot.isEmpty()) {
+                    throw new RuntimeException("No account found with this email address.");
+                }
+
+                DocumentSnapshot document = querySnapshot.getDocuments().get(0);
+                HospitalProfile profile = document.toObject(HospitalProfile.class);
+
+                if (profile == null) {
+                    throw new RuntimeException("Failed to load hospital profile.");
+                }
+                if (profile.getPasswordHash() == null || profile.getPasswordSalt() == null) {
+                    throw new RuntimeException("Account security data not found.");
+                }
+
+                boolean ok = PasswordHasher.verifyPassword(password, profile.getPasswordHash(), profile.getPasswordSalt());
+                if (!ok) {
+                    throw new RuntimeException("Invalid email or password.");
+                }
+
+                return profile.getUid();
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException("Authentication failed: " + e.getMessage(), e);
+            }
+        });
+    }
+
     public CompletableFuture<LoginResult> authenticateAnyUser(String email, String password) {
         String normalizedEmail = email == null ? "" : email.trim().toLowerCase();
 
@@ -355,6 +466,27 @@ public class FirebaseService {
         });
     }
 
+    public CompletableFuture<HospitalProfile> getHospitalProfile(String uid) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                ApiFuture<DocumentSnapshot> future = firestore.collection(HOSPITALS_COLLECTION).document(uid).get();
+                DocumentSnapshot document = future.get();
+
+                if (document.exists()) {
+                    HospitalProfile profile = document.toObject(HospitalProfile.class);
+                    if (profile != null && (profile.getAddressNormalized() == null || profile.getAddressNormalized().isBlank())) {
+                        profile.setAddressNormalized(AddressNormalizer.normalize(profile.getFullAddress()));
+                    }
+                    return profile;
+                } else {
+                    throw new RuntimeException("Hospital profile not found");
+                }
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException("Failed to retrieve hospital profile: " + e.getMessage(), e);
+            }
+        });
+    }
+
     public CompletableFuture<List<PharmacyProfile>> getAllPharmacies() {
         return CompletableFuture.supplyAsync(() -> {
             List<PharmacyProfile> pharmacies = new ArrayList<>();
@@ -391,6 +523,46 @@ public class FirebaseService {
                 return pharmacies;
             } catch (Exception e) {
                 throw new RuntimeException("Failed to retrieve pharmacies: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    public CompletableFuture<List<HospitalProfile>> getAllHospitals() {
+        return CompletableFuture.supplyAsync(() -> {
+            List<HospitalProfile> hospitals = new ArrayList<>();
+            try {
+                QuerySnapshot snapshot = firestore.collection(HOSPITALS_COLLECTION).get().get();
+
+                for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                    HospitalProfile profile = doc.toObject(HospitalProfile.class);
+                    if (profile == null) {
+                        continue;
+                    }
+                    if (profile.getUid() == null || profile.getUid().isBlank()) {
+                        profile.setUid(doc.getId());
+                    }
+                    if (profile.getFullAddress() == null || profile.getFullAddress().isBlank()) {
+                        profile.setFullAddress(HospitalProfile.buildFullAddress(
+                                profile.getAddressLine(),
+                                profile.getCity(),
+                                profile.getState(),
+                                profile.getZip()
+                        ));
+                    }
+                    if (profile.getAddressNormalized() == null || profile.getAddressNormalized().isBlank()) {
+                        profile.setAddressNormalized(AddressNormalizer.normalize(profile.getFullAddress()));
+                    }
+                    hospitals.add(profile);
+                }
+
+                hospitals.sort((left, right) -> {
+                    String leftName = left.getHospitalName() != null ? left.getHospitalName() : "";
+                    String rightName = right.getHospitalName() != null ? right.getHospitalName() : "";
+                    return leftName.compareToIgnoreCase(rightName);
+                });
+                return hospitals;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to retrieve hospitals: " + e.getMessage(), e);
             }
         });
     }

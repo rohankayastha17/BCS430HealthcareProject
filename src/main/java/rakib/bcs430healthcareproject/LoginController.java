@@ -88,6 +88,11 @@ public class LoginController {
         SceneRouter.go("pharmacy-auth-view.fxml", "Pharmacy Portal");
     }
 
+    @FXML
+    private void onHospitalPortal() {
+        SceneRouter.go("hospital-auth-view.fxml", "Hospital Portal");
+    }
+
     private void showError(String msg) {
         errorLabel.setText(msg);
         errorLabel.setStyle("-fx-text-fill: #cc0000;");

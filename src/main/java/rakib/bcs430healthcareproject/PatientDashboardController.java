@@ -24,6 +24,7 @@ public class PatientDashboardController {
 
     @FXML private Button appointmentsButton;
     @FXML private Button findDoctorButton;
+    @FXML private Button findHospitalButton;
     @FXML private Button prescriptionsButton;
     @FXML private Button profileButton;
     @FXML private Button notificationButton;
@@ -189,6 +190,11 @@ public class PatientDashboardController {
     @FXML
     private void onFindDoctor() {
         SceneRouter.go("doctor-search-view.fxml", "Find a Doctor");
+    }
+
+    @FXML
+    private void onFindHospital() {
+        SceneRouter.go("hospital-search-view.fxml", "Find a Hospital");
     }
 
     @FXML
