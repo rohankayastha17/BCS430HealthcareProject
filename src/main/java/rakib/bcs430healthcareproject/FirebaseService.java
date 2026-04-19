@@ -3,6 +3,7 @@ package rakib.bcs430healthcareproject;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QuerySnapshot;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
@@ -14,8 +15,10 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -422,7 +425,25 @@ public class FirebaseService {
                     }
 
                     return authenticateDoctor(normalizedEmail, password)
-                            .thenApply(uid -> new LoginResult(uid, "DOCTOR"));
+                            .thenApply(uid -> new LoginResult(uid, "DOCTOR"))
+                            .handle((doctorResult, doctorEx) -> doctorResult)
+                            .thenCompose(doctorResult -> {
+                                if (doctorResult != null) {
+                                    return CompletableFuture.completedFuture(doctorResult);
+                                }
+
+                                return authenticatePharmacy(normalizedEmail, password)
+                                        .thenApply(uid -> new LoginResult(uid, "PHARMACY"))
+                                        .handle((pharmacyResult, pharmacyEx) -> pharmacyResult)
+                                        .thenCompose(pharmacyResult -> {
+                                            if (pharmacyResult != null) {
+                                                return CompletableFuture.completedFuture(pharmacyResult);
+                                            }
+
+                                            return authenticateHospital(normalizedEmail, password)
+                                                    .thenApply(uid -> new LoginResult(uid, "HOSPITAL"));
+                                        });
+                            });
                 });
     }
 
@@ -683,6 +704,34 @@ public class FirebaseService {
         });
     }
 
+    public CompletableFuture<Void> updatePharmacyProfile(String uid, PharmacyProfile profile) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                profile.setUpdatedAt(System.currentTimeMillis());
+                ApiFuture<?> future = firestore.collection(PHARMACIES_COLLECTION).document(uid).set(profile);
+                future.get();
+                System.out.println("Pharmacy profile updated for UID: " + uid);
+                return null;
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException("Failed to update pharmacy profile: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    public CompletableFuture<Void> updateHospitalProfile(String uid, HospitalProfile profile) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                profile.setUpdatedAt(System.currentTimeMillis());
+                ApiFuture<?> future = firestore.collection(HOSPITALS_COLLECTION).document(uid).set(profile);
+                future.get();
+                System.out.println("Hospital profile updated for UID: " + uid);
+                return null;
+            } catch (ExecutionException | InterruptedException e) {
+                throw new RuntimeException("Failed to update hospital profile: " + e.getMessage(), e);
+            }
+        });
+    }
+
     /**
      * Retrieves all doctors from the database.
      */
@@ -696,7 +745,6 @@ public class FirebaseService {
                     doctors.add(mapDoctorDocument(doc));
                 }
 
-                // If no doctors, add a test doctor
                 if (doctors.isEmpty()) {
                     Doctor testDoctor = new Doctor();
                     testDoctor.setUid("test123");
@@ -945,7 +993,6 @@ public class FirebaseService {
             throw new RuntimeException("Appointment date/time is required.");
         }
 
-        // Ensure date + slot are filled for Firebase queries
         if ((appointment.getAppointmentDate() == null || appointment.getAppointmentDate().isBlank())
                 || (appointment.getAppointmentSlot() == null || appointment.getAppointmentSlot().isBlank())) {
 
@@ -1092,6 +1139,115 @@ public class FirebaseService {
                 return patients;
             } catch (Exception e) {
                 throw new RuntimeException("Failed to retrieve doctor patients: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Retrieves unique patients who have appointments with a hospital.
+     * Tries hospitalUid first. If older appointment docs don't have hospitalUid,
+     * it falls back to matching the appointment hospitalName against the current hospital profile.
+     */
+    public CompletableFuture<List<PatientProfile>> getPatientsForHospital(String hospitalUid) {
+        return CompletableFuture.supplyAsync(() -> {
+            Map<String, PatientProfile> uniquePatients = new HashMap<>();
+
+            try {
+                HospitalProfile hospitalProfile = getHospitalProfile(hospitalUid).get();
+
+                QuerySnapshot snapshot = firestore.collection(APPOINTMENTS_COLLECTION)
+                        .whereEqualTo("hospitalUid", hospitalUid)
+                        .get()
+                        .get();
+
+                if (snapshot.isEmpty() && hospitalProfile != null) {
+                    String hospitalName = hospitalProfile.getHospitalName();
+                    if (hospitalName != null && !hospitalName.isBlank()) {
+                        snapshot = firestore.collection(APPOINTMENTS_COLLECTION)
+                                .whereEqualTo("hospitalName", hospitalName)
+                                .get()
+                                .get();
+                    }
+                }
+
+                for (DocumentSnapshot appointmentDoc : snapshot.getDocuments()) {
+                    String patientUid = appointmentDoc.getString("patientUid");
+                    if (patientUid == null || patientUid.isBlank() || uniquePatients.containsKey(patientUid)) {
+                        continue;
+                    }
+
+                    DocumentSnapshot patientDoc = firestore.collection(PATIENTS_COLLECTION)
+                            .document(patientUid)
+                            .get()
+                            .get();
+
+                    if (!patientDoc.exists()) {
+                        continue;
+                    }
+
+                    PatientProfile profile = patientDoc.toObject(PatientProfile.class);
+                    if (profile != null) {
+                        if (profile.getUid() == null || profile.getUid().isBlank()) {
+                            profile.setUid(patientDoc.getId());
+                        }
+                        uniquePatients.put(patientUid, profile);
+                    }
+                }
+
+                List<PatientProfile> patients = new ArrayList<>(uniquePatients.values());
+                patients.sort((left, right) -> {
+                    String leftName = left.getName() != null ? left.getName() : "";
+                    String rightName = right.getName() != null ? right.getName() : "";
+                    return leftName.compareToIgnoreCase(rightName);
+                });
+
+                return patients;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to retrieve hospital patients: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Retrieves appointments for a hospital.
+     * Tries hospitalUid first. If older appointment docs don't have hospitalUid,
+     * it falls back to hospitalName.
+     */
+    public CompletableFuture<List<Appointment>> getAppointmentsForHospital(String hospitalUid) {
+        return CompletableFuture.supplyAsync(() -> {
+            List<Appointment> appointments = new ArrayList<>();
+
+            try {
+                HospitalProfile hospitalProfile = getHospitalProfile(hospitalUid).get();
+
+                QuerySnapshot snapshot = firestore.collection(APPOINTMENTS_COLLECTION)
+                        .whereEqualTo("hospitalUid", hospitalUid)
+                        .orderBy("appointmentDateTime", Query.Direction.ASCENDING)
+                        .get()
+                        .get();
+
+                if (snapshot.isEmpty() && hospitalProfile != null) {
+                    String hospitalName = hospitalProfile.getHospitalName();
+                    if (hospitalName != null && !hospitalName.isBlank()) {
+                        snapshot = firestore.collection(APPOINTMENTS_COLLECTION)
+                                .whereEqualTo("hospitalName", hospitalName)
+                                .orderBy("appointmentDateTime", Query.Direction.ASCENDING)
+                                .get()
+                                .get();
+                    }
+                }
+
+                for (DocumentSnapshot doc : snapshot.getDocuments()) {
+                    Appointment appointment = doc.toObject(Appointment.class);
+                    if (appointment != null) {
+                        appointment.setAppointmentId(doc.getId());
+                        appointments.add(appointment);
+                    }
+                }
+
+                return appointments;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to retrieve hospital appointments: " + e.getMessage(), e);
             }
         });
     }

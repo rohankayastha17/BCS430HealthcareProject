@@ -1,9 +1,5 @@
 package rakib.bcs430healthcareproject;
 
-/**
- * Manages the current logged-in user context across the application.
- * This is a simple singleton to store the current user's UID and profile information.
- */
 public class UserContext {
     private static UserContext instance;
 
@@ -18,7 +14,7 @@ public class UserContext {
     // For patient appointment booking
     private Doctor selectedDoctor;
 
-    // For doctor viewing patient history/details
+    // For doctor / hospital viewing patient history/details
     private String selectedPatientUid;
     private PatientProfile selectedPatientProfile;
 
@@ -96,10 +92,6 @@ public class UserContext {
         return "DOCTOR".equals(role);
     }
 
-    public boolean isLoggedIn() {
-        return uid != null && role != null;
-    }
-
     public boolean isPharmacy() {
         return "PHARMACY".equals(role);
     }
@@ -108,7 +100,15 @@ public class UserContext {
         return "HOSPITAL".equals(role);
     }
 
+    public boolean isLoggedIn() {
+        return uid != null && role != null;
+    }
+
     public PatientProfile getProfile() {
+        return patientProfile;
+    }
+
+    public PatientProfile getPatientProfile() {
         return patientProfile;
     }
 

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="rakib.bcs430healthcareproject.HospitalPatientsController"
+            stylesheets="@app.css"
+            styleClass="root">
+
+    <top>
+        <VBox spacing="0">
+            <HBox style="-fx-background-color: #0F766E; -fx-padding: 16 24; -fx-alignment: center-left; -fx-spacing: 20;">
+                <Label text="HealthConnect"
+                       style="-fx-text-fill: white; -fx-font-size: 24; -fx-font-weight: bold;" />
+
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <Button text="Dashboard" onAction="#onDashboard"
+                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 13; -fx-font-weight: bold;" />
+                <Button text="Patients" onAction="#onPatients"
+                        style="-fx-background-color: rgba(255,255,255,0.18); -fx-text-fill: white; -fx-font-size: 13; -fx-font-weight: bold; -fx-background-radius: 8;" />
+                <Button text="Schedule" onAction="#onSchedule"
+                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 13; -fx-font-weight: bold;" />
+                <Button text="Profile" onAction="#onProfile"
+                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 13; -fx-font-weight: bold;" />
+                <Button text="Logout" onAction="#onLogout"
+                        style="-fx-background-color: white; -fx-text-fill: #0F766E; -fx-font-size: 12; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 6 14;" />
+            </HBox>
+
+            <HBox style="-fx-background-color: #134E4A; -fx-padding: 18 24;">
+                <VBox spacing="4">
+                    <Label text="Patients"
+                           style="-fx-text-fill: white; -fx-font-size: 24; -fx-font-weight: bold;" />
+                    <Label text="Browse and manage hospital-linked patients."
+                           style="-fx-text-fill: #CCFBF1; -fx-font-size: 13;" />
+                </VBox>
+            </HBox>
+        </VBox>
+    </top>
+
+    <center>
+        <VBox spacing="16" style="-fx-padding: 18;">
+            <VBox styleClass="card" spacing="12" style="-fx-padding: 16;">
+                <HBox spacing="12" alignment="CENTER_LEFT">
+                    <TextField fx:id="searchField"
+                               promptText="Search patient by name or email"
+                               HBox.hgrow="ALWAYS"/>
+                    <Button text="Search" onAction="#onSearch" styleClass="primary-btn"/>
+                    <Button text="Clear" onAction="#onClear" styleClass="ghost-btn"/>
+                </HBox>
+            </VBox>
+
+            <VBox styleClass="card" spacing="12" style="-fx-padding: 16;" VBox.vgrow="ALWAYS">
+                <HBox alignment="CENTER_LEFT">
+                    <Label fx:id="resultsLabel"
+                           text="Patient Results"
+                           style="-fx-text-fill: #0F766E; -fx-font-size: 18; -fx-font-weight: bold;" />
+                    <Region HBox.hgrow="ALWAYS"/>
+                </HBox>
+
+                <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS"
+                            style="-fx-background-color: transparent; -fx-border-color: transparent;">
+                    <content>
+                        <VBox fx:id="patientsListVBox" spacing="12" style="-fx-padding: 4;">
+                            <padding>
+                                <Insets top="4" right="4" bottom="4" left="4"/>
+                            </padding>
+                        </VBox>
+                    </content>
+                </ScrollPane>
+            </VBox>
+        </VBox>
+    </center>
+</BorderPane>

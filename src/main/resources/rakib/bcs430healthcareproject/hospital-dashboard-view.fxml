@@ -3,42 +3,141 @@
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx"
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="rakib.bcs430healthcareproject.HospitalDashboardController"
-            stylesheets="@app.css">
+            stylesheets="@app.css"
+            styleClass="root">
 
     <top>
-        <HBox style="-fx-background-color:#0F766E; -fx-padding:18 24; -fx-alignment:center-left;">
-            <Label text="HealthConnect"
-                   style="-fx-text-fill:white; -fx-font-size:22; -fx-font-weight:bold;"/>
-            <Region HBox.hgrow="ALWAYS"/>
-            <Button text="Logout"
-                    onAction="#onLogout"
-                    style="-fx-background-color:#14B8A6; -fx-text-fill:white; -fx-font-size:13; -fx-font-weight:bold; -fx-background-radius:8; -fx-padding:8 16;"/>
-        </HBox>
+        <VBox spacing="0">
+            <HBox style="-fx-background-color: #0F766E; -fx-padding: 16 24; -fx-alignment: center-left; -fx-spacing: 18;">
+                <Label text="HealthConnect"
+                       style="-fx-text-fill: white; -fx-font-size: 24; -fx-font-weight: bold;" />
+
+                <Region HBox.hgrow="ALWAYS" />
+
+                <Button text="Patients"
+                        onAction="#onPatients"
+                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 13; -fx-font-weight: bold; -fx-cursor: hand;" />
+
+                <Button text="Schedule"
+                        onAction="#onSchedule"
+                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 13; -fx-font-weight: bold; -fx-cursor: hand;" />
+
+                <Button text="Profile"
+                        onAction="#onProfile"
+                        style="-fx-background-color: transparent; -fx-text-fill: white; -fx-font-size: 13; -fx-font-weight: bold; -fx-cursor: hand;" />
+
+                <Button text="Logout"
+                        onAction="#onLogout"
+                        style="-fx-background-color: white; -fx-text-fill: #0F766E; -fx-font-size: 12; -fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 6 14; -fx-cursor: hand;" />
+            </HBox>
+
+            <HBox style="-fx-background-color: #134E4A; -fx-padding: 18 24;">
+                <VBox spacing="4">
+                    <Label fx:id="welcomeLabel"
+                           text="Welcome, Hospital"
+                           style="-fx-text-fill: white; -fx-font-size: 24; -fx-font-weight: bold;" />
+                    <Label fx:id="hospitalInfoLabel"
+                           text="Manage patients and appointments."
+                           style="-fx-text-fill: #CCFBF1; -fx-font-size: 13;" />
+                </VBox>
+            </HBox>
+        </VBox>
     </top>
 
     <center>
-        <VBox spacing="18" style="-fx-padding: 28; -fx-background-color: #F8FAFC;">
-            <VBox style="-fx-background-color: linear-gradient(to right, #0F766E, #14B8A6); -fx-background-radius: 12; -fx-padding: 24; -fx-spacing: 8;">
-                <Label text="Hospital Portal"
-                       style="-fx-text-fill: white; -fx-font-size: 24; -fx-font-weight: bold;" />
-                <Label text="Your hospital account is active in the HealthConnect directory."
-                       style="-fx-text-fill: #CCFBF1; -fx-font-size: 14;" />
-            </VBox>
+        <VBox spacing="18" style="-fx-padding: 20; -fx-background-color: #F8FAFC;">
 
-            <VBox style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20; -fx-spacing: 10; -fx-border-color: #D1FAE5; -fx-border-radius: 12;">
-                <Label fx:id="hospitalNameLabel" style="-fx-text-fill: #0F172A; -fx-font-size: 18; -fx-font-weight: bold;"/>
-                <Label fx:id="hospitalEmailLabel" style="-fx-text-fill: #475569; -fx-font-size: 14;"/>
-                <Label fx:id="hospitalPhoneLabel" style="-fx-text-fill: #475569; -fx-font-size: 14;"/>
-                <Label fx:id="hospitalAddressLabel" style="-fx-text-fill: #475569; -fx-font-size: 14;" wrapText="true"/>
-            </VBox>
+            <HBox spacing="16">
+                <VBox styleClass="card" spacing="6" HBox.hgrow="ALWAYS" style="-fx-padding: 18;">
+                    <Label text="Total Patients"
+                           style="-fx-text-fill: #64748B; -fx-font-size: 12; -fx-font-weight: bold;" />
+                    <Label fx:id="totalPatientsLabel"
+                           text="0"
+                           style="-fx-text-fill: #0F766E; -fx-font-size: 28; -fx-font-weight: bold;" />
+                </VBox>
+
+                <VBox styleClass="card" spacing="6" HBox.hgrow="ALWAYS" style="-fx-padding: 18;">
+                    <Label text="Appointments Today"
+                           style="-fx-text-fill: #64748B; -fx-font-size: 12; -fx-font-weight: bold;" />
+                    <Label fx:id="appointmentsTodayLabel"
+                           text="0"
+                           style="-fx-text-fill: #0F766E; -fx-font-size: 28; -fx-font-weight: bold;" />
+                </VBox>
+
+                <VBox styleClass="card" spacing="6" HBox.hgrow="ALWAYS" style="-fx-padding: 18;">
+                    <Label text="Departments"
+                           style="-fx-text-fill: #64748B; -fx-font-size: 12; -fx-font-weight: bold;" />
+                    <Label fx:id="departmentsLabel"
+                           text="—"
+                           style="-fx-text-fill: #0F766E; -fx-font-size: 28; -fx-font-weight: bold;" />
+                </VBox>
+            </HBox>
+
+            <HBox spacing="18" VBox.vgrow="ALWAYS">
+
+                <VBox styleClass="card" spacing="12" HBox.hgrow="ALWAYS" style="-fx-padding: 18;">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Patients"
+                               style="-fx-text-fill: #0F766E; -fx-font-size: 18; -fx-font-weight: bold;" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button text="View All"
+                                onAction="#onPatients"
+                                style="-fx-background-color: #0F766E; -fx-text-fill: white; -fx-font-size: 12; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;" />
+                    </HBox>
+
+                    <Label text="Recently linked patients"
+                           style="-fx-text-fill: #64748B; -fx-font-size: 12;" />
+
+                    <ScrollPane fitToWidth="true"
+                                VBox.vgrow="ALWAYS"
+                                style="-fx-background-color: transparent; -fx-border-color: transparent;">
+                        <content>
+                            <VBox fx:id="patientsListVBox" spacing="10" style="-fx-padding: 4;">
+                                <padding>
+                                    <Insets top="4" right="4" bottom="4" left="4" />
+                                </padding>
+                            </VBox>
+                        </content>
+                    </ScrollPane>
+                </VBox>
+
+                <VBox styleClass="card" spacing="12" HBox.hgrow="ALWAYS" style="-fx-padding: 18;">
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Schedule"
+                               style="-fx-text-fill: #0F766E; -fx-font-size: 18; -fx-font-weight: bold;" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button text="Open Schedule"
+                                onAction="#onSchedule"
+                                style="-fx-background-color: #0F766E; -fx-text-fill: white; -fx-font-size: 12; -fx-font-weight: bold; -fx-background-radius: 8; -fx-cursor: hand;" />
+                    </HBox>
+
+                    <Label text="Upcoming appointments"
+                           style="-fx-text-fill: #64748B; -fx-font-size: 12;" />
+
+                    <ScrollPane fitToWidth="true"
+                                VBox.vgrow="ALWAYS"
+                                style="-fx-background-color: transparent; -fx-border-color: transparent;">
+                        <content>
+                            <VBox fx:id="scheduleListVBox" spacing="10" style="-fx-padding: 4;">
+                                <padding>
+                                    <Insets top="4" right="4" bottom="4" left="4" />
+                                </padding>
+                            </VBox>
+                        </content>
+                    </ScrollPane>
+                </VBox>
+
+            </HBox>
         </VBox>
     </center>
 
