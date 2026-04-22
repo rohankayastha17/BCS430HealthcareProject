@@ -10,6 +10,8 @@
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <BorderPane xmlns:fx="http://javafx.com/fxml"
             fx:controller="rakib.bcs430healthcareproject.HospitalLoginController"
             styleClass="root">
@@ -30,7 +32,13 @@
                 </VBox>
 
                 <VBox spacing="8">
-                    <Label text="Password" styleClass="label"/>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Password" styleClass="label"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Hyperlink text="Forgot password?"
+                                   onAction="#onForgotPassword"
+                                   style="-fx-font-size:12; -fx-text-fill:#0F766E; -fx-padding:0; -fx-border-width:0;"/>
+                    </HBox>
                     <PasswordField fx:id="passwordField" promptText="Password"/>
                 </VBox>
 

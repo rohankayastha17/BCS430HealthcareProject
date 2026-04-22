@@ -76,7 +76,32 @@ public class LoginController {
                     return null;
                 });
     }
+    @FXML
+    private void onForgotPassword() {
+        String email = emailField.getText() == null ? "" : emailField.getText().trim();
 
+        if (email.isEmpty() || !email.contains("@") || !email.contains(".")) {
+            showError("Please enter your email in the email field to reset your password.");
+            return;
+        }
+
+        // Show loading status
+        errorLabel.setText("Sending reset link...");
+        errorLabel.setStyle("-fx-text-fill: #0F766E;"); // Use theme color for info
+        errorLabel.setManaged(true);
+        errorLabel.setVisible(true);
+
+        // Call FirebaseService to send the reset email
+        firebaseService.sendPasswordResetEmail(email)
+                .thenAccept(v -> Platform.runLater(() -> {
+                    errorLabel.setText("Password reset email sent! Check your inbox.");
+                    errorLabel.setStyle("-fx-text-fill: #16A34A;"); // Green color for success
+                }))
+                .exceptionally(e -> {
+                    Platform.runLater(() -> showError("Failed to send reset email: " + e.getMessage()));
+                    return null;
+                });
+    }
 
     @FXML
     private void onGoSignup() {

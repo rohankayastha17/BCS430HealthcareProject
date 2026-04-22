@@ -54,7 +54,26 @@ public class PharmacyLoginController {
     private void onBack() {
         SceneRouter.go("pharmacy-auth-view.fxml", "Pharmacy Portal");
     }
+    @FXML
+    private void onForgotPassword() {
+        String email = emailField.getText() == null ? "" : emailField.getText().trim().toLowerCase();
 
+        if (email.isEmpty() || !email.contains("@") || !email.contains(".")) {
+            showMessage("Please enter your email in the email field to reset your password.", true);
+            return;
+        }
+
+        showMessage("Sending reset link...", false);
+
+        firebaseService.sendPasswordResetEmail(email)
+                .thenAccept(v -> Platform.runLater(() ->
+                        showMessage("Password reset email sent! Check your inbox.", false)
+                ))
+                .exceptionally(ex -> {
+                    Platform.runLater(() -> showMessage(cleanErrorMessage(ex), true));
+                    return null;
+                });
+    }
     private void showMessage(String message, boolean isError) {
         errorLabel.setText(message);
         errorLabel.setStyle(isError ? "-fx-text-fill:#DC2626;" : "-fx-text-fill:#0F766E;");

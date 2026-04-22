@@ -59,8 +59,14 @@
 
                 <!-- Password -->
                 <VBox spacing="6">
-                    <Label text="Password"
-                           style="-fx-font-size:13; -fx-text-fill:#374151;"/>
+                    <HBox alignment="CENTER_LEFT">
+                        <Label text="Password"
+                               style="-fx-font-size:13; -fx-text-fill:#374151;"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Hyperlink text="Forgot password?"
+                                   onAction="#onForgotPassword"
+                                   style="-fx-font-size:12; -fx-text-fill:#0F766E; -fx-padding:0; -fx-border-width:0;"/>
+                    </HBox>
 
                     <PasswordField fx:id="passwordField"
                                    promptText="••••••••"

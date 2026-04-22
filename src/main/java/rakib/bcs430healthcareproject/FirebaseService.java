@@ -10,6 +10,9 @@ import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.UserRecord;
 import com.google.firebase.cloud.FirestoreClient;
 
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -20,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -2021,4 +2025,20 @@ public class FirebaseService {
         }
         return "Login failed: " + errorMessage;
     }
+    public CompletableFuture<Void> sendPasswordResetEmail(String email) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+
+        // Assuming you are using the Firebase Admin SDK or standard Firebase Auth
+        // NOTE: If using a REST API approach instead of the Admin SDK, your HTTP call goes here.
+        try {
+            FirebaseAuth.getInstance().generatePasswordResetLink(email);
+            // If using standard client SDK: FirebaseAuth.getInstance().sendPasswordResetEmail(email);
+            future.complete(null);
+        } catch (Exception e) {
+            future.completeExceptionally(new Exception("Could not send reset email. Ensure the email is registered."));
+        }
+
+        return future;
+    }
+
 }

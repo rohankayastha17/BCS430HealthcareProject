@@ -66,4 +66,24 @@ public class HospitalLoginController {
         Throwable cause = throwable != null && throwable.getCause() != null ? throwable.getCause() : throwable;
         return cause != null && cause.getMessage() != null ? cause.getMessage() : "Unknown error";
     }
+    @FXML
+    private void onForgotPassword() {
+        String email = emailField.getText() == null ? "" : emailField.getText().trim();
+
+        if (email.isEmpty() || !email.contains("@") || !email.contains(".")) {
+            showMessage("Please enter your email in the email field to reset your password.", true);
+            return;
+        }
+
+        showMessage("Sending reset link...", false);
+
+        firebaseService.sendPasswordResetEmail(email)
+                .thenAccept(v -> Platform.runLater(() ->
+                        showMessage("Password reset email sent! Check your inbox.", false)
+                ))
+                .exceptionally(e -> {
+                    Platform.runLater(() -> showMessage(cleanErrorMessage(e), true));
+                    return null;
+                });
+    }
 }
