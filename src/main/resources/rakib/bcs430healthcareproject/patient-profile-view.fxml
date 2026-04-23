@@ -160,6 +160,11 @@
                         <Label text="Medical History" style="-fx-text-fill: #333; -fx-font-weight: bold;"/>
                         <TextArea fx:id="medicalHistoryArea" promptText="Describe any past medical conditions or surgeries" wrapText="true" style="-fx-padding: 8; -fx-control-inner-background: white; -fx-min-height: 80;" />
                     </VBox>
+
+                    <Button fx:id="pastAppointmentsButton"
+                            onAction="#onViewPastAppointments"
+                            text="Past Appointments"
+                            style="-fx-padding: 10 16; -fx-font-size: 12; -fx-background-color: #0F766E; -fx-text-fill: white; -fx-cursor: hand;" />
                 </VBox>
                 
                 <!-- Spacer -->

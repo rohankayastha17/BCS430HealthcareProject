@@ -115,16 +115,19 @@ public class DoctorPatientsController {
     }
 
     private void onViewProfile(PatientProfile patient) {
+        userContext.setSelectedPatientUid(patient.getUid());
         userContext.setSelectedPatientProfile(patient);
         SceneRouter.go("patient-profile-view.fxml", "Patient Profile");
     }
 
     private void onSendPrescription(PatientProfile patient) {
+        userContext.setSelectedPatientUid(patient.getUid());
         userContext.setSelectedPatientProfile(patient);
         SceneRouter.go("doctor-prescription-view.fxml", "Send Prescription");
     }
 
     private void onSendText(PatientProfile patient) {
+        userContext.setSelectedPatientUid(patient.getUid());
         userContext.setSelectedPatientProfile(patient);
         SceneRouter.go("doctor-message-view.fxml", "Send Message");
     }

@@ -20,6 +20,7 @@ import java.time.ZonedDateTime;
 import java.time.format.TextStyle;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -37,6 +38,7 @@ public class PatientAppointmentsController {
     @FXML private Label statusLabel;
     @FXML private Button backButton;
     @FXML private ComboBox<String> filterComboBox;
+    @FXML private Button viewPastAppointmentsButton;
 
     private FirebaseService firebaseService;
     private UserContext userContext;
@@ -49,7 +51,7 @@ public class PatientAppointmentsController {
         userContext = UserContext.getInstance();
 
         // Setup filter
-        filterComboBox.getItems().addAll("All", "SCHEDULED", "COMPLETED", "CANCELLED");
+        filterComboBox.getItems().addAll("All", "SCHEDULED");
         filterComboBox.setValue("All");
         filterComboBox.setOnAction(e -> displayAppointments(filterComboBox.getValue()));
 
@@ -85,12 +87,12 @@ public class PatientAppointmentsController {
         firebaseService.getPatientAppointments(patientUid)
                 .thenAccept(appointments -> {
                     Platform.runLater(() -> {
-                        allAppointments = appointments;
-                        if (appointments.isEmpty()) {
+                        allAppointments = appointments == null ? new ArrayList<>() : appointments;
+                        if (allAppointments.isEmpty()) {
                             showStatus("No appointments found. Book one from the Find a Doctor section.", false);
                             appointmentsListVBox.getChildren().clear();
                         } else {
-                            showStatus("Found " + appointments.size() + " appointment(s)", false);
+                            showStatus("Found " + allAppointments.size() + " appointment(s)", false);
                             displayAppointments(filterComboBox.getValue());
                         }
                     });
@@ -110,31 +112,27 @@ public class PatientAppointmentsController {
         appointmentsListVBox.getChildren().clear();
 
         long now = System.currentTimeMillis();
-        List<Appointment> toDisplay = new ArrayList<>();
+        List<Appointment> upcomingAppointments = new ArrayList<>();
+
         for (Appointment apt : allAppointments) {
-            if (apt == null || apt.hasPassed(now)) {
+            if (apt == null || !matchesFilter(apt, filter)) {
                 continue;
             }
 
-            String status = apt.getStatus() != null ? apt.getStatus() : "";
-            if (filter.equals("All") || status.equals(filter)) {
-                toDisplay.add(apt);
+            if (!isPastAppointment(apt, now)) {
+                upcomingAppointments.add(apt);
             }
         }
 
-        if (toDisplay.isEmpty()) {
-            String emptyMessage = filter.equals("All")
-                    ? "No upcoming appointments found."
-                    : "No upcoming appointments with status: " + filter;
-            Label emptyLabel = new Label(emptyMessage);
-            emptyLabel.setStyle("-fx-text-fill: #7F8C8D; -fx-font-size: 13;");
-            appointmentsListVBox.getChildren().add(emptyLabel);
-            return;
-        }
+        upcomingAppointments.sort(Comparator.comparing(
+                Appointment::resolveAppointmentEpochMillis,
+                Comparator.nullsLast(Long::compareTo)
+        ));
 
-        for (Appointment apt : toDisplay) {
-            appointmentsListVBox.getChildren().add(createAppointmentCard(apt));
-        }
+        addSection("Upcoming Appointments", upcomingAppointments,
+                filter.equals("All")
+                        ? "No upcoming appointments found."
+                        : "No upcoming appointments with status: " + filter);
     }
 
     /**
@@ -184,11 +182,25 @@ public class PatientAppointmentsController {
             card.getChildren().add(reasonLabel);
         }
 
-        // Notes if available
+        // Booking notes if available
         if (apt.getNotes() != null && !apt.getNotes().trim().isEmpty()) {
-            Label notesLabel = new Label("Notes: " + apt.getNotes());
+            Label notesLabel = new Label("Booking notes: " + apt.getNotes());
             notesLabel.setStyle("-fx-font-size: 11; -fx-text-fill: #7F8C8D; -fx-wrap-text: true;");
             card.getChildren().add(notesLabel);
+        }
+
+        if (apt.getVisitSummary() != null && !apt.getVisitSummary().trim().isEmpty()) {
+            Label summaryLabel = new Label("Visit summary: " + apt.getVisitSummary());
+            summaryLabel.setWrapText(true);
+            summaryLabel.setStyle("-fx-font-size: 11; -fx-text-fill: #1F2937; -fx-font-weight: bold;");
+            card.getChildren().add(summaryLabel);
+        }
+
+        if (apt.getPrescribedMedications() != null && !apt.getPrescribedMedications().trim().isEmpty()) {
+            Label medicationsLabel = new Label("Prescription sent: " + apt.getPrescribedMedications());
+            medicationsLabel.setWrapText(true);
+            medicationsLabel.setStyle("-fx-font-size: 11; -fx-text-fill: #1F2937;");
+            card.getChildren().add(medicationsLabel);
         }
 
         // Action buttons
@@ -197,7 +209,7 @@ public class PatientAppointmentsController {
         buttonBox.setPadding(new Insets(8, 0, 0, 0));
         buttonBox.setStyle("-fx-border-color: #BDC3C7; -fx-border-width: 1 0 0 0; -fx-padding: 8 0 0 0;");
 
-        if ("SCHEDULED".equals(status)) {
+        if ("SCHEDULED".equals(status) && !isPastAppointment(apt, System.currentTimeMillis())) {
             Button rescheduleBtn = new Button("Reschedule");
             rescheduleBtn.setStyle("-fx-padding: 6 12; -fx-font-size: 11; -fx-cursor: hand;");
             rescheduleBtn.setOnAction(e -> showRescheduleDialog(apt));
@@ -560,8 +572,7 @@ public class PatientAppointmentsController {
         confirm.setContentText("Cancel appointment with Dr. " + (apt.getDoctorName() != null ? apt.getDoctorName() : "Doctor") + "?");
 
         if (confirm.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
-            apt.setStatus("CANCELLED");
-            firebaseService.updateAppointment(apt)
+            firebaseService.deleteAppointment(apt.getAppointmentId())
                     .thenAccept(v -> {
                         Platform.runLater(() -> {
                             showStatus("Appointment cancelled", false);
@@ -606,6 +617,36 @@ public class PatientAppointmentsController {
         };
     }
 
+    private boolean matchesFilter(Appointment appointment, String filter) {
+        String status = appointment.getStatus() == null ? "" : appointment.getStatus().trim().toUpperCase(Locale.ENGLISH);
+        if ("CANCELLED".equals(status)) {
+            return false;
+        }
+        return "All".equals(filter) || status.equalsIgnoreCase(filter);
+    }
+
+    private boolean isPastAppointment(Appointment appointment, long now) {
+        String status = appointment.getStatus() == null ? "" : appointment.getStatus().trim().toUpperCase(Locale.ENGLISH);
+        return "COMPLETED".equals(status) || appointment.hasPassed(now);
+    }
+
+    private void addSection(String title, List<Appointment> appointments, String emptyMessage) {
+        Label titleLabel = new Label(title);
+        titleLabel.setStyle("-fx-font-size: 16; -fx-font-weight: bold; -fx-text-fill: #2C3E50; -fx-padding: 0 0 8 0;");
+        appointmentsListVBox.getChildren().add(titleLabel);
+
+        if (appointments.isEmpty()) {
+            Label emptyLabel = new Label(emptyMessage);
+            emptyLabel.setStyle("-fx-text-fill: #7F8C8D; -fx-font-size: 13; -fx-padding: 0 0 12 0;");
+            appointmentsListVBox.getChildren().add(emptyLabel);
+            return;
+        }
+
+        for (Appointment appointment : appointments) {
+            appointmentsListVBox.getChildren().add(createAppointmentCard(appointment));
+        }
+    }
+
     /**
      * Display status message
      */
@@ -620,5 +661,10 @@ public class PatientAppointmentsController {
     @FXML
     private void onBack() {
         SceneRouter.go("patient-dashboard-view.fxml", "Dashboard");
+    }
+
+    @FXML
+    private void onViewPastAppointments() {
+        SceneRouter.go("patient-past-appointments-view.fxml", "Past Appointments");
     }
 }

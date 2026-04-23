@@ -2,6 +2,7 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.image.Image?>
 <?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
@@ -102,6 +103,8 @@
         <StackPane>
 
             <!-- Main content -->
+            <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-border-color: transparent;">
+            <content>
             <VBox style="-fx-padding: 30; -fx-spacing: 20; -fx-background-color: #F8FAFC;">
 
                 <!-- Dashboard Title -->
@@ -127,7 +130,26 @@
                            style="-fx-text-fill: #555555; -fx-font-size: 14;" />
                 </VBox>
 
+                <VBox style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20; -fx-spacing: 12; -fx-border-color: #D1FAE5; -fx-border-radius: 12;">
+                    <HBox style="-fx-alignment: center-left; -fx-spacing: 10;">
+                        <Label text="Today's Appointments"
+                               style="-fx-text-fill: #0F766E; -fx-font-size: 16; -fx-font-weight: bold;" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button text="Open Schedule"
+                                onAction="#onSchedule"
+                                style="-fx-background-color: #0F766E; -fx-text-fill: white; -fx-font-size: 12; -fx-font-weight: bold; -fx-background-radius: 18; -fx-padding: 8 14;" />
+                    </HBox>
+
+                    <Label fx:id="todayAppointmentsStatusLabel"
+                           text="Loading today's appointments..."
+                           style="-fx-text-fill: #475569; -fx-font-size: 12;" />
+
+                    <VBox fx:id="todayAppointmentsVBox" spacing="10" />
+                </VBox>
+
             </VBox>
+            </content>
+            </ScrollPane>
 
             <!-- 💬 FLOATING MESSAGE BUTTON -->
             <Button fx:id="messageFabButton"

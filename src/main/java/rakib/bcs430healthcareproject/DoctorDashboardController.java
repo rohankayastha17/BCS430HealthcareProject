@@ -8,10 +8,18 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
 import javafx.util.Duration;
 
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Controller for the Doctor Dashboard.
@@ -25,6 +33,8 @@ public class DoctorDashboardController {
     @FXML private Label currentDateTimeLabel;
     @FXML private Label doctorNameLabel;
     @FXML private Label doctorEmailLabel;
+    @FXML private Label todayAppointmentsStatusLabel;
+    @FXML private VBox todayAppointmentsVBox;
 
     @FXML private Button patientsButton;
     @FXML private Button scheduleButton;
@@ -72,6 +82,7 @@ public class DoctorDashboardController {
             }
 
             loadNotificationCount(uid);
+            loadTodayAppointments(uid);
             startUnreadPolling(uid);
             startNotificationPolling(uid);
 
@@ -146,9 +157,129 @@ public class DoctorDashboardController {
     // =========================================================
 
     private void startNotificationPolling(String uid) {
-        notificationPolling = new Timeline(new KeyFrame(Duration.seconds(5), e -> loadNotificationCount(uid)));
+        notificationPolling = new Timeline(new KeyFrame(Duration.seconds(5), e -> {
+            loadNotificationCount(uid);
+            loadTodayAppointments(uid);
+        }));
         notificationPolling.setCycleCount(Timeline.INDEFINITE);
         notificationPolling.play();
+    }
+
+    private void loadTodayAppointments(String doctorUid) {
+        firebaseService.getDoctorAppointmentsForDate(doctorUid, LocalDate.now())
+                .thenAccept(appointments -> Platform.runLater(() -> renderTodayAppointments(appointments)))
+                .exceptionally(error -> {
+                    Platform.runLater(() -> {
+                        if (todayAppointmentsStatusLabel != null) {
+                            todayAppointmentsStatusLabel.setText("Unable to load today's appointments.");
+                        }
+                    });
+                    return null;
+                });
+    }
+
+    private void renderTodayAppointments(List<Appointment> appointments) {
+        if (todayAppointmentsVBox == null) {
+            return;
+        }
+
+        todayAppointmentsVBox.getChildren().clear();
+        List<Appointment> todaysAppointments = new ArrayList<>();
+
+        if (appointments != null) {
+            for (Appointment appointment : appointments) {
+                if (appointment == null) {
+                    continue;
+                }
+
+                String status = normalizedStatus(appointment.getStatus());
+                if ("CANCELLED".equals(status)) {
+                    continue;
+                }
+
+                todaysAppointments.add(appointment);
+            }
+        }
+
+        todaysAppointments.sort(Comparator.comparing(
+                Appointment::resolveAppointmentEpochMillis,
+                Comparator.nullsLast(Long::compareTo)
+        ));
+
+        if (todaysAppointments.isEmpty()) {
+            todayAppointmentsVBox.getChildren().add(buildEmptyAppointmentCard());
+            todayAppointmentsStatusLabel.setText("No appointments scheduled for today.");
+            return;
+        }
+
+        int previewCount = Math.min(5, todaysAppointments.size());
+        for (int index = 0; index < previewCount; index++) {
+            todayAppointmentsVBox.getChildren().add(buildTodayAppointmentCard(todaysAppointments.get(index)));
+        }
+
+        todayAppointmentsStatusLabel.setText("Showing " + previewCount + " appointment(s) for today.");
+    }
+
+    private VBox buildTodayAppointmentCard(Appointment appointment) {
+        VBox card = new VBox(6);
+        card.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #D1FAE5; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 14;");
+
+        Label patientLabel = new Label(valueOrDefault(appointment.getPatientName(), "Unknown Patient"));
+        patientLabel.setStyle("-fx-text-fill: #0F172A; -fx-font-size: 14; -fx-font-weight: bold;");
+
+        Label timeLabel = new Label("Time: " + formatAppointmentTime(appointment));
+        timeLabel.setStyle("-fx-text-fill: #334155; -fx-font-size: 12;");
+
+        Label reasonLabel = new Label("Reason: " + valueOrDefault(appointment.getReason(), "General visit"));
+        reasonLabel.setWrapText(true);
+        reasonLabel.setStyle("-fx-text-fill: #475569; -fx-font-size: 12;");
+
+        Label statusLabel = new Label(valueOrDefault(appointment.getStatus(), "SCHEDULED"));
+        statusLabel.setStyle(getStatusBadgeStyle(appointment.getStatus()));
+
+        card.getChildren().addAll(patientLabel, timeLabel, reasonLabel, statusLabel);
+        return card;
+    }
+
+    private VBox buildEmptyAppointmentCard() {
+        VBox card = new VBox(6);
+        card.setStyle("-fx-background-color: #F8FAFC; -fx-border-color: #E2E8F0; -fx-border-radius: 10; -fx-background-radius: 10; -fx-padding: 14;");
+
+        Label title = new Label("No appointments today");
+        title.setStyle("-fx-text-fill: #0F172A; -fx-font-size: 14; -fx-font-weight: bold;");
+
+        Label subtitle = new Label("Today's schedule is clear.");
+        subtitle.setStyle("-fx-text-fill: #64748B; -fx-font-size: 12;");
+
+        card.getChildren().addAll(title, subtitle);
+        return card;
+    }
+
+    private String formatAppointmentTime(Appointment appointment) {
+        Long epoch = appointment == null ? null : appointment.resolveAppointmentEpochMillis();
+        if (epoch == null) {
+            return "Time unavailable";
+        }
+
+        return Instant.ofEpochMilli(epoch)
+                .atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH));
+    }
+
+    private String getStatusBadgeStyle(String status) {
+        String normalized = normalizedStatus(status);
+        return switch (normalized) {
+            case "COMPLETED" -> "-fx-background-color: #DCFCE7; -fx-text-fill: #166534; -fx-font-size: 11; -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 4 10;";
+            default -> "-fx-background-color: #DBEAFE; -fx-text-fill: #1D4ED8; -fx-font-size: 11; -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 4 10;";
+        };
+    }
+
+    private String normalizedStatus(String status) {
+        return status == null ? "" : status.trim().toUpperCase(Locale.ENGLISH);
+    }
+
+    private String valueOrDefault(String value, String fallback) {
+        return value == null || value.isBlank() ? fallback : value;
     }
 
     private void loadNotificationCount(String uid) {

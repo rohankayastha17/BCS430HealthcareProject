@@ -7,12 +7,17 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 
 import java.net.URL;
 import java.time.Instant;
@@ -43,6 +48,7 @@ public class DoctorScheduleController implements Initializable {
     @FXML private Button btnMessage;
     @FXML private Button btnReschedule;
     @FXML private Button btnBookSchedule;
+    @FXML private Button btnEditPatientProfile;
 
     @FXML private TextField txtName;
     @FXML private TextField txtContact;
@@ -133,6 +139,9 @@ public class DoctorScheduleController implements Initializable {
             if (appointment == null || appointment.getAppointmentDate() == null) {
                 continue;
             }
+            if ("CANCELLED".equalsIgnoreCase(appointment.getStatus())) {
+                continue;
+            }
 
             LocalDate appointmentDate;
             try {
@@ -150,7 +159,7 @@ public class DoctorScheduleController implements Initializable {
                     valueOrDefault(appointment.getPatientName(), "Unknown Patient"),
                     valueOrDefault(appointment.getReason(), "General"),
                     valueOrDefault(appointment.getStatus(), "SCHEDULED"),
-                    valueOrDefault(appointment.getNotes(), "")
+                    buildScheduleNotes(appointment)
             );
             schedule.setSourceAppointment(appointment);
             scheduleList.add(schedule);
@@ -336,6 +345,22 @@ public class DoctorScheduleController implements Initializable {
     }
 
     @FXML
+    private void handleEditPatientProfile() {
+        Schedule selectedAppt = appointmentTable.getSelectionModel().getSelectedItem();
+
+        if (selectedAppt == null || selectedAppt.getSourceAppointment() == null) {
+            showAlert("No Patient Selected", "Please select an appointment to edit the patient profile.");
+            return;
+        }
+
+        openPatientContext(
+                selectedAppt.getSourceAppointment().getPatientUid(),
+                "patient-profile-view.fxml",
+                "Patient Profile"
+        );
+    }
+
+    @FXML
     private void handleCancelSelected() {
         Schedule selectedAppt = appointmentTable.getSelectionModel().getSelectedItem();
 
@@ -345,9 +370,8 @@ public class DoctorScheduleController implements Initializable {
         }
 
         Appointment appointment = selectedAppt.getSourceAppointment();
-        appointment.setStatus("CANCELLED");
 
-        firebaseService.updateAppointment(appointment)
+        firebaseService.deleteAppointment(appointment.getAppointmentId())
                 .thenAccept(v -> Platform.runLater(() -> {
                     firebaseService.notifyPatient(
                             appointment.getPatientUid(),
@@ -378,12 +402,10 @@ public class DoctorScheduleController implements Initializable {
         }
 
         Appointment appointment = selectedAppt.getSourceAppointment();
-        appointment.setStatus("COMPLETED");
-
-        firebaseService.updateAppointment(appointment)
-                .thenAccept(v -> Platform.runLater(this::loadAppointments))
+        firebaseService.getPatientPrescriptionsForDoctor(appointment.getPatientUid(), userContext.getUid())
+                .thenAccept(prescriptions -> Platform.runLater(() -> showCompletionDialog(appointment, prescriptions)))
                 .exceptionally(e -> {
-                    Platform.runLater(() -> showAlert("Update Error", cleanErrorMessage(e)));
+                    Platform.runLater(() -> showAlert("Prescription Error", cleanErrorMessage(e)));
                     return null;
                 });
     }
@@ -406,6 +428,105 @@ public class DoctorScheduleController implements Initializable {
                 }))
                 .exceptionally(e -> {
                     Platform.runLater(() -> showAlert("Patient Error", cleanErrorMessage(e)));
+                    return null;
+                });
+    }
+
+    private void showCompletionDialog(Appointment appointment, List<Prescription> prescriptions) {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Complete Appointment");
+        dialog.setHeaderText("Add a visit summary for " + valueOrDefault(appointment.getPatientName(), "this patient"));
+
+        ButtonType completeType = new ButtonType("Save Summary", ButtonBar.ButtonData.OK_DONE);
+        ButtonType completeAndEditType = new ButtonType("Save and Edit Profile", ButtonBar.ButtonData.OTHER);
+        dialog.getDialogPane().getButtonTypes().addAll(completeType, completeAndEditType, ButtonType.CANCEL);
+
+        TextArea summaryArea = new TextArea();
+        summaryArea.setPromptText("What happened during the appointment?");
+        summaryArea.setWrapText(true);
+        summaryArea.setPrefRowCount(6);
+        summaryArea.setText(valueOrDefault(appointment.getVisitSummary(), ""));
+
+        ComboBox<PrescriptionOption> prescriptionComboBox = new ComboBox<>();
+        prescriptionComboBox.setMaxWidth(Double.MAX_VALUE);
+        PrescriptionOption noneOption = PrescriptionOption.none();
+        prescriptionComboBox.getItems().add(noneOption);
+        if (prescriptions != null) {
+            for (Prescription prescription : prescriptions) {
+                prescriptionComboBox.getItems().add(PrescriptionOption.fromPrescription(prescription));
+            }
+        }
+
+        PrescriptionOption selectedOption = noneOption;
+        for (PrescriptionOption option : prescriptionComboBox.getItems()) {
+            if (appointment.getPrescribedPrescriptionId() != null
+                    && appointment.getPrescribedPrescriptionId().equals(option.prescriptionId)) {
+                selectedOption = option;
+                break;
+            }
+            if (appointment.getPrescribedPrescriptionId() == null
+                    && appointment.getPrescribedMedications() != null
+                    && appointment.getPrescribedMedications().equals(option.displayText)) {
+                selectedOption = option;
+                break;
+            }
+        }
+        prescriptionComboBox.setValue(selectedOption);
+
+        Label bookingNotesLabel = new Label("Original reason/notes: "
+                + valueOrDefault(appointment.getNotes(), "None provided"));
+        bookingNotesLabel.setWrapText(true);
+        bookingNotesLabel.setStyle("-fx-text-fill: #475569; -fx-font-size: 12;");
+
+        VBox content = new VBox(10,
+                new Label("Visit summary"),
+                summaryArea,
+                new Label("Prescription sent to pharmacy"),
+                prescriptionComboBox,
+                bookingNotesLabel
+        );
+        content.setPrefWidth(420);
+        dialog.getDialogPane().setContent(content);
+
+        ButtonType result = dialog.showAndWait().orElse(ButtonType.CANCEL);
+        if (result == ButtonType.CANCEL) {
+            return;
+        }
+
+        String summary = summaryArea.getText() == null ? "" : summaryArea.getText().trim();
+        PrescriptionOption medicationOption = prescriptionComboBox.getValue() == null
+                ? noneOption
+                : prescriptionComboBox.getValue();
+        if (summary.isBlank()) {
+            showAlert("Validation Error", "A visit summary is required before completing the appointment.");
+            return;
+        }
+
+        appointment.setStatus("COMPLETED");
+        appointment.setVisitSummary(summary);
+        appointment.setPrescribedMedications(medicationOption.displayText);
+        appointment.setPrescribedPrescriptionId(medicationOption.prescriptionId);
+        appointment.setCompletedAt(System.currentTimeMillis());
+
+        firebaseService.updateAppointment(appointment)
+                .thenAccept(v -> Platform.runLater(() -> {
+                    firebaseService.notifyPatient(
+                            appointment.getPatientUid(),
+                            "Appointment Completed",
+                            "A visit summary from Dr. " + valueOrDefault(appointment.getDoctorName(), userContext.getName())
+                                    + " is now available in your appointments.",
+                            "APPOINTMENT",
+                            appointment.getAppointmentId()
+                    );
+
+                    if (result == completeAndEditType) {
+                        openPatientContext(appointment.getPatientUid(), "patient-profile-view.fxml", "Patient Profile");
+                    } else {
+                        loadAppointments();
+                    }
+                }))
+                .exceptionally(e -> {
+                    Platform.runLater(() -> showAlert("Update Error", cleanErrorMessage(e)));
                     return null;
                 });
     }
@@ -435,6 +556,14 @@ public class DoctorScheduleController implements Initializable {
 
         return LocalDateTime.ofInstant(Instant.ofEpochMilli(epoch), ZoneId.systemDefault())
                 .format(TIME_FORMAT);
+    }
+
+    private String buildScheduleNotes(Appointment appointment) {
+        if ("COMPLETED".equalsIgnoreCase(appointment.getStatus()) && appointment.getVisitSummary() != null
+                && !appointment.getVisitSummary().isBlank()) {
+            return appointment.getVisitSummary();
+        }
+        return valueOrDefault(appointment.getNotes(), "");
     }
 
     private String cleanErrorMessage(Throwable throwable) {
@@ -470,6 +599,43 @@ public class DoctorScheduleController implements Initializable {
         private AppointmentCreationResult(String appointmentId, PatientProfile patient) {
             this.appointmentId = appointmentId;
             this.patient = patient;
+        }
+    }
+
+    private static class PrescriptionOption {
+        private final String prescriptionId;
+        private final String displayText;
+
+        private PrescriptionOption(String prescriptionId, String displayText) {
+            this.prescriptionId = prescriptionId;
+            this.displayText = displayText;
+        }
+
+        private static PrescriptionOption none() {
+            return new PrescriptionOption(null, "");
+        }
+
+        private static PrescriptionOption fromPrescription(Prescription prescription) {
+            String medicationName = prescription.getMedicationName() == null || prescription.getMedicationName().isBlank()
+                    ? "Medication"
+                    : prescription.getMedicationName();
+            String dosage = prescription.getDosage() == null || prescription.getDosage().isBlank()
+                    ? "Dosage not listed"
+                    : prescription.getDosage();
+            String pharmacyName = prescription.getPharmacyName() == null || prescription.getPharmacyName().isBlank()
+                    ? "Pharmacy"
+                    : prescription.getPharmacyName();
+            return new PrescriptionOption(
+                    prescription.getPrescriptionId(),
+                    medicationName + " (" + dosage + ") sent to " + pharmacyName
+            );
+        }
+
+        @Override
+        public String toString() {
+            return displayText == null || displayText.isBlank()
+                    ? "No prescription selected"
+                    : displayText;
         }
     }
 }

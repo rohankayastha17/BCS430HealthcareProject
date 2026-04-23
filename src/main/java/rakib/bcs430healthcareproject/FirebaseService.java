@@ -915,9 +915,11 @@ public class FirebaseService {
                     }
 
                     String status = appointment.getStatus();
-                    if (status == null || !status.equalsIgnoreCase("CANCELLED")) {
-                        return false;
+                    if (status != null && status.equalsIgnoreCase("CANCELLED")) {
+                        continue;
                     }
+
+                    return false;
                 }
 
                 return true;
@@ -943,8 +945,8 @@ public class FirebaseService {
                 for (Appointment appointment : appointments) {
                     if (appointment.getAppointmentDateTime() != null
                             && appointment.getAppointmentDateTime().longValue() == appointmentDateTime
-                            && appointment.getStatus() != null
-                            && !appointment.getStatus().equalsIgnoreCase("CANCELLED")) {
+                            && (appointment.getStatus() == null
+                            || !appointment.getStatus().equalsIgnoreCase("CANCELLED"))) {
                         return false;
                     }
                 }
@@ -1579,6 +1581,27 @@ public class FirebaseService {
         });
     }
 
+    public CompletableFuture<List<Prescription>> getPatientPrescriptionsForDoctor(String patientUid, String doctorUid) {
+        return getPatientPrescriptions(patientUid)
+                .thenApply(prescriptions -> {
+                    List<Prescription> filtered = new ArrayList<>();
+                    if (prescriptions == null) {
+                        return filtered;
+                    }
+
+                    for (Prescription prescription : prescriptions) {
+                        if (prescription == null) {
+                            continue;
+                        }
+                        if (doctorUid == null || doctorUid.isBlank()
+                                || doctorUid.equals(prescription.getDoctorUid())) {
+                            filtered.add(prescription);
+                        }
+                    }
+                    return filtered;
+                });
+    }
+
     public CompletableFuture<List<Prescription>> getAllPrescriptions() {
         return CompletableFuture.supplyAsync(() -> {
             List<Prescription> prescriptions = new ArrayList<>();
@@ -1832,6 +1855,24 @@ public class FirebaseService {
 
             } catch (Exception e) {
                 throw new RuntimeException("Failed to update appointment: " + e.getMessage(), e);
+            }
+        });
+    }
+
+    public CompletableFuture<Void> deleteAppointment(String appointmentId) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                if (appointmentId == null || appointmentId.isBlank()) {
+                    throw new RuntimeException("Appointment ID is required for deletion");
+                }
+
+                firestore.collection(APPOINTMENTS_COLLECTION)
+                        .document(appointmentId)
+                        .delete()
+                        .get();
+
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to delete appointment: " + e.getMessage(), e);
             }
         });
     }

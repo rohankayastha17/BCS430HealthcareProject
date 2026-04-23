@@ -10,6 +10,7 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.control.ScrollPane?>
 
 <StackPane xmlns="http://javafx.com/javafx"
            xmlns:fx="http://javafx.com/fxml"
@@ -95,6 +96,8 @@
 
         <!-- Main Content -->
         <center>
+            <ScrollPane fitToWidth="true" style="-fx-background-color: transparent; -fx-border-color: transparent;">
+            <content>
             <VBox style="-fx-padding: 30; -fx-spacing: 20; -fx-background-color: #F8FAFC;">
 
                 <VBox style="-fx-background-color: linear-gradient(to right, #0F766E, #14B8A6); -fx-background-radius: 12; -fx-padding: 24; -fx-spacing: 8;">
@@ -119,6 +122,23 @@
                 </VBox>
 
                 <VBox style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20; -fx-spacing: 12; -fx-border-color: #D1FAE5; -fx-border-radius: 12;">
+                    <HBox style="-fx-alignment: center-left; -fx-spacing: 10;">
+                        <Label text="Upcoming Appointments"
+                               style="-fx-text-fill: #0F766E; -fx-font-size: 16; -fx-font-weight: bold;" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button text="Open My Appointments"
+                                onAction="#onAppointments"
+                                style="-fx-background-color: #0F766E; -fx-text-fill: white; -fx-font-size: 12; -fx-font-weight: bold; -fx-background-radius: 18; -fx-padding: 8 14;" />
+                    </HBox>
+
+                    <Label fx:id="upcomingAppointmentsStatusLabel"
+                           text="Loading upcoming appointments..."
+                           style="-fx-text-fill: #475569; -fx-font-size: 12;" />
+
+                    <VBox fx:id="upcomingAppointmentsPreviewVBox" spacing="10" />
+                </VBox>
+
+                <VBox style="-fx-background-color: white; -fx-background-radius: 12; -fx-padding: 20; -fx-spacing: 12; -fx-border-color: #D1FAE5; -fx-border-radius: 12;">
                     <Label text="Hospital Access"
                            style="-fx-text-fill: #0F766E; -fx-font-size: 16; -fx-font-weight: bold;" />
                     <Label text="Search registered hospital accounts on HealthConnect and view their locations and contact information."
@@ -130,6 +150,8 @@
                 </VBox>
 
             </VBox>
+            </content>
+            </ScrollPane>
         </center>
 
     </BorderPane>

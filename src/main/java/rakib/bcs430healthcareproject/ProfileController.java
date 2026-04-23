@@ -38,6 +38,7 @@ public class ProfileController {
     @FXML private TextArea currentMedicationsArea;
     @FXML private TextArea chronicConditionsArea;
     @FXML private TextArea medicalHistoryArea;
+    @FXML private Button pastAppointmentsButton;
     @FXML private Button editButton;
     @FXML private Button saveButton;
     @FXML private Button cancelButton;
@@ -48,7 +49,7 @@ public class ProfileController {
     private UserContext userContext;
     private PatientProfile currentProfile;
     private boolean isEditMode = false;
-    private boolean isDoctorReadOnlyView = false;
+    private boolean isDoctorPatientView = false;
     private boolean isPharmacyReadOnlyView = false;
     private List<PharmacyOption> pharmacyOptions = new ArrayList<>();
 
@@ -92,7 +93,7 @@ public class ProfileController {
         }
 
         if (userContext.isDoctor() && userContext.getSelectedPatientProfile() != null) {
-            isDoctorReadOnlyView = true;
+            isDoctorPatientView = true;
             currentProfile = userContext.getSelectedPatientProfile();
             titleLabel.setText("Patient Profile");
         } else if (userContext.isPharmacy() && userContext.getSelectedPatientProfile() != null) {
@@ -187,7 +188,8 @@ public class ProfileController {
             return;
         }
         
-        System.out.println("Saving profile for UID: " + userContext.getUid());
+        String targetUid = isDoctorPatientView ? currentProfile.getUid() : userContext.getUid();
+        System.out.println("Saving profile for UID: " + targetUid);
         
         // Update profile with new values
         currentProfile.setName(nameField.getText().trim());
@@ -286,11 +288,15 @@ public class ProfileController {
         
         // Save to Firestore
         showStatus("Saving profile...", false);
-        firebaseService.updatePatientProfile(userContext.getUid(), currentProfile)
+        firebaseService.updatePatientProfile(targetUid, currentProfile)
                 .thenAccept(v -> {
                     Platform.runLater(() -> {
                         System.out.println("Profile saved successfully to Firestore");
-                        userContext.updatePatientProfile(currentProfile);
+                        if (isDoctorPatientView) {
+                            userContext.setSelectedPatientProfile(currentProfile);
+                        } else {
+                            userContext.updatePatientProfile(currentProfile);
+                        }
                         isEditMode = false;
                         setFieldsEditable(false);
                         updateButtonVisibility();
@@ -317,7 +323,7 @@ public class ProfileController {
 
     @FXML
     private void onBack() {
-        if (isDoctorReadOnlyView) {
+        if (isDoctorPatientView) {
             userContext.clearSelectedPatientProfile();
             SceneRouter.go("doctor-patients-view.fxml", "My Patients");
             return;
@@ -329,6 +335,15 @@ public class ProfileController {
         }
 
         SceneRouter.go("patient-dashboard-view.fxml", "Patient Dashboard");
+    }
+
+    @FXML
+    private void onViewPastAppointments() {
+        if (isDoctorPatientView && currentProfile != null) {
+            userContext.setSelectedPatientUid(currentProfile.getUid());
+            userContext.setSelectedPatientProfile(currentProfile);
+        }
+        SceneRouter.go("patient-past-appointments-view.fxml", "Past Appointments");
     }
 
     /**
@@ -362,6 +377,10 @@ public class ProfileController {
      * Update button visibility based on current mode
      */
     private void updateButtonVisibility() {
+        boolean showPastAppointmentsButton = !isPharmacyReadOnlyView;
+        pastAppointmentsButton.setManaged(showPastAppointmentsButton);
+        pastAppointmentsButton.setVisible(showPastAppointmentsButton);
+
         if (isReadOnlyPatientView()) {
             editButton.setManaged(false);
             editButton.setVisible(false);
@@ -546,14 +565,11 @@ public class ProfileController {
     }
 
     private boolean isReadOnlyPatientView() {
-        return isDoctorReadOnlyView || isPharmacyReadOnlyView;
+        return isPharmacyReadOnlyView;
     }
 
     private String readOnlyViewMessage() {
-        if (isPharmacyReadOnlyView) {
-            return "Pharmacies can only view patient profiles here.";
-        }
-        return "Doctors can only view patient profiles here.";
+        return "Pharmacies can only view patient profiles here.";
     }
 
     private static class PharmacyOption {

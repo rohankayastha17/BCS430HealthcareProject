@@ -35,13 +35,21 @@ public class Appointment {
     private String appointmentDate; // e.g., "2026-03-15"
     private String appointmentSlot; // e.g., "10:30 AM"
 
-    private String status; // SCHEDULED, COMPLETED, CANCELLED
+    private String status; // SCHEDULED, COMPLETED
 
     private Boolean newPatient;
 
     private String reason;
 
     private String notes;
+
+    private String visitSummary;
+
+    private String prescribedMedications;
+
+    private String prescribedPrescriptionId;
+
+    private Long completedAt;
 
     private Long createdAt;
 
@@ -180,6 +188,38 @@ public class Appointment {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getVisitSummary() {
+        return visitSummary;
+    }
+
+    public void setVisitSummary(String visitSummary) {
+        this.visitSummary = visitSummary;
+    }
+
+    public String getPrescribedMedications() {
+        return prescribedMedications;
+    }
+
+    public void setPrescribedMedications(String prescribedMedications) {
+        this.prescribedMedications = prescribedMedications;
+    }
+
+    public String getPrescribedPrescriptionId() {
+        return prescribedPrescriptionId;
+    }
+
+    public void setPrescribedPrescriptionId(String prescribedPrescriptionId) {
+        this.prescribedPrescriptionId = prescribedPrescriptionId;
+    }
+
+    public Long getCompletedAt() {
+        return completedAt;
+    }
+
+    public void setCompletedAt(Long completedAt) {
+        this.completedAt = completedAt;
     }
 
     public Long getCreatedAt() {
