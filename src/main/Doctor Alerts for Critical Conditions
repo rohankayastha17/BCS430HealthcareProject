@@ -1,0 +1,53 @@
+package com.example.healthcare.model;
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+@Entity
+public class PatientResult {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private Long patientId;
+    private String resultName;
+    private String resultValue;
+    private String normalRange;
+    private String status;
+
+    private boolean criticalIssue;
+    private boolean doctorAlertSent;
+
+    private LocalDateTime alertCreatedAt;
+    private String alertMessage;
+
+    public Long getId() { return id; }
+
+    public Long getPatientId() { return patientId; }
+    public void setPatientId(Long patientId) { this.patientId = patientId; }
+
+    public String getResultName() { return resultName; }
+    public void setResultName(String resultName) { this.resultName = resultName; }
+
+    public String getResultValue() { return resultValue; }
+    public void setResultValue(String resultValue) { this.resultValue = resultValue; }
+
+    public String getNormalRange() { return normalRange; }
+    public void setNormalRange(String normalRange) { this.normalRange = normalRange; }
+
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+
+    public boolean isCriticalIssue() { return criticalIssue; }
+    public void setCriticalIssue(boolean criticalIssue) { this.criticalIssue = criticalIssue; }
+
+    public boolean isDoctorAlertSent() { return doctorAlertSent; }
+    public void setDoctorAlertSent(boolean doctorAlertSent) { this.doctorAlertSent = doctorAlertSent; }
+
+    public LocalDateTime getAlertCreatedAt() { return alertCreatedAt; }
+    public void setAlertCreatedAt(LocalDateTime alertCreatedAt) { this.alertCreatedAt = alertCreatedAt; }
+
+    public String getAlertMessage() { return alertMessage; }
+    public void setAlertMessage(String alertMessage) { this.alertMessage = alertMessage; }
+}
