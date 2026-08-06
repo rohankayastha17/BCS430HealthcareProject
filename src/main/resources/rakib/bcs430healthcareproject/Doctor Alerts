@@ -1,0 +1,239 @@
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+class Patient {
+    private final int id;
+    private final String name;
+    private final String doctorEmail;
+
+    public Patient(int id, String name, String doctorEmail) {
+        this.id = id;
+        this.name = name;
+        this.doctorEmail = doctorEmail;
+    }
+
+    public int getId() { return id; }
+    public String getName() { return name; }
+    public String getDoctorEmail() { return doctorEmail; }
+}
+
+class LabResult {
+    private final int patientId;
+    private final String testName;
+    private final double value;
+    private final String unit;
+    private final LocalDateTime timestamp;
+
+    public LabResult(int patientId, String testName, double value, String unit, LocalDateTime timestamp) {
+        this.patientId = patientId;
+        this.testName = testName;
+        this.value = value;
+        this.unit = unit;
+        this.timestamp = timestamp;
+    }
+
+    public int getPatientId() { return patientId; }
+    public String getTestName() { return testName; }
+    public double getValue() { return value; }
+    public String getUnit() { return unit; }
+    public LocalDateTime getTimestamp() { return timestamp; }
+}
+
+class Vitals {
+    private final int patientId;
+    private final int heartRate;
+    private final int systolicBP;
+    private final int diastolicBP;
+    private final int respiratoryRate;
+    private final int spo2;
+    private final double temperatureC;
+    private final LocalDateTime timestamp;
+
+    public Vitals(int patientId, int heartRate, int systolicBP, int diastolicBP,
+                  int respiratoryRate, int spo2, double temperatureC, LocalDateTime timestamp) {
+        this.patientId = patientId;
+        this.heartRate = heartRate;
+        this.systolicBP = systolicBP;
+        this.diastolicBP = diastolicBP;
+        this.respiratoryRate = respiratoryRate;
+        this.spo2 = spo2;
+        this.temperatureC = temperatureC;
+        this.timestamp = timestamp;
+    }
+
+    public int getPatientId() { return patientId; }
+    public int getHeartRate() { return heartRate; }
+    public int getSystolicBP() { return systolicBP; }
+    public int getDiastolicBP() { return diastolicBP; }
+    public int getRespiratoryRate() { return respiratoryRate; }
+    public int getSpo2() { return spo2; }
+    public double getTemperatureC() { return temperatureC; }
+    public LocalDateTime getTimestamp() { return timestamp; }
+}
+
+class Alert {
+    private final int patientId;
+    private final String patientName;
+    private final String doctorEmail;
+    private final String type;
+    private final String message;
+    private final LocalDateTime createdAt;
+
+    public Alert(int patientId, String patientName, String doctorEmail, String type, String message) {
+        this.patientId = patientId;
+        this.patientName = patientName;
+        this.doctorEmail = doctorEmail;
+        this.type = type;
+        this.message = message;
+        this.createdAt = LocalDateTime.now();
+    }
+
+    public String format() {
+        return "[" + type + "] Patient: " + patientName +
+               " | Doctor: " + doctorEmail +
+               " | Message: " + message +
+               " | Time: " + createdAt;
+    }
+}
+
+interface AlertNotifier {
+    void notify(Alert alert);
+}
+
+class ConsoleNotifier implements AlertNotifier {
+    @Override
+    public void notify(Alert alert) {
+        System.out.println(alert.format());
+    }
+}
+
+class AlertService {
+    private final AlertNotifier notifier;
+
+    public AlertService(AlertNotifier notifier) {
+        this.notifier = notifier;
+    }
+
+    public List<Alert> checkLabResults(Patient patient, List<LabResult> labs) {
+        List<Alert> alerts = new ArrayList<>();
+
+        for (LabResult lab : labs) {
+            String test = lab.getTestName().toLowerCase();
+            double value = lab.getValue();
+            boolean critical = false;
+            String message = "";
+
+            switch (test) {
+                case "potassium":
+                    if (value < 2.5 || value > 6.0) {
+                        critical = true;
+                        message = "Critical potassium level: " + value + " " + lab.getUnit();
+                    }
+                    break;
+                case "sodium":
+                    if (value < 120 || value > 160) {
+                        critical = true;
+                        message = "Critical sodium level: " + value + " " + lab.getUnit();
+                    }
+                    break;
+                case "glucose":
+                    if (value < 50 || value > 400) {
+                        critical = true;
+                        message = "Critical glucose level: " + value + " " + lab.getUnit();
+                    }
+                    break;
+                case "hemoglobin":
+                    if (value < 7.0) {
+                        critical = true;
+                        message = "Critical hemoglobin level: " + value + " " + lab.getUnit();
+                    }
+                    break;
+                default:
+                    break;
+            }
+
+            if (critical) {
+                Alert alert = new Alert(
+                        patient.getId(),
+                        patient.getName(),
+                        patient.getDoctorEmail(),
+                        "CRITICAL_LAB",
+                        message
+                );
+                alerts.add(alert);
+                notifier.notify(alert);
+            }
+        }
+
+        return alerts;
+    }
+
+    public List<Alert> checkVitals(Patient patient, Vitals vitals) {
+        List<Alert> alerts = new ArrayList<>();
+
+        boolean deteriorating = false;
+        List<String> reasons = new ArrayList<>();
+
+        if (vitals.getSpo2() < 92) {
+            deteriorating = true;
+            reasons.add("SpO2 low: " + vitals.getSpo2() + "%");
+        }
+        if (vitals.getSystolicBP() < 90) {
+            deteriorating = true;
+            reasons.add("Systolic BP low: " + vitals.getSystolicBP());
+        }
+        if (vitals.getHeartRate() < 50 || vitals.getHeartRate() > 120) {
+            deteriorating = true;
+            reasons.add("Heart rate abnormal: " + vitals.getHeartRate());
+        }
+        if (vitals.getRespiratoryRate() < 10 || vitals.getRespiratoryRate() > 24) {
+            deteriorating = true;
+            reasons.add("Respiratory rate abnormal: " + vitals.getRespiratoryRate());
+        }
+        if (vitals.getTemperatureC() >= 38.5) {
+            deteriorating = true;
+            reasons.add("Fever: " + vitals.getTemperatureC() + " C");
+        }
+
+        if (deteriorating) {
+            String message = "Possible patient deterioration: " + String.join("; ", reasons);
+            Alert alert = new Alert(
+                    patient.getId(),
+                    patient.getName(),
+                    patient.getDoctorEmail(),
+                    "PATIENT_DETERIORATION",
+                    message
+            );
+            alerts.add(alert);
+            notifier.notify(alert);
+        }
+
+        return alerts;
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Patient patient = new Patient(1, "John Doe", "doctor@example.com");
+
+        List<LabResult> labs = List.of(
+                new LabResult(1, "Potassium", 6.4, "mmol/L", LocalDateTime.now()),
+                new LabResult(1, "Glucose", 110, "mg/dL", LocalDateTime.now())
+        );
+
+        Vitals vitals = new Vitals(
+                1,   // heart rate
+                132,  // systolic
+                84,   // diastolic
+                28,   // respiratory rate
+                89,   // SpO2
+                38.7, // temperature
+                LocalDateTime.now()
+        );
+
+        AlertService alertService = new AlertService(new ConsoleNotifier());
+        alertService.checkLabResults(patient, labs);
+        alertService.checkVitals(patient, vitals);
+    }
+}
